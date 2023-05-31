@@ -16,9 +16,10 @@ pub use prover::*;
 pub use transcript::*;
 pub use verifier::*;
 
-use ark_ec::{AffineRepr, Group, CurveGroup};
+use ark_ec::{AffineRepr, CurveGroup, Group};
 // {AffineCurve, ProjectiveCurve};
 use ark_ff::Field;
+use ark_std::ops::AddAssign;
 use rayon::prelude::*;
 /// Returns the vector used for the linear combination fo the inner pairing product
 /// between A and B for the Groth16 aggregation: A^r * B. It is required as it
@@ -43,7 +44,7 @@ pub(crate) fn compress<C: AffineRepr>(vec: &mut Vec<C>, split: usize, scaler: &C
             //let mut x = mul!(a_r.into_group(), scaler.clone());
             let sc = scaler.clone();
             let mut x = a_r.mul(sc);
-            x.add_assign(&a_l);
+            x.add_assign(a_l);
             *a_l = x.into_affine();
         });
     let len = left.len();

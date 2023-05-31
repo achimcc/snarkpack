@@ -1,4 +1,4 @@
-use ark_ec::{AffineRepr, Group, CurveGroup, VariableBaseMSM, pairing::Pairing};
+use ark_ec::{pairing::Pairing, AffineRepr, CurveGroup, Group, VariableBaseMSM};
 // {msm::VariableBaseMSM, AffineCurve, PairingEngine, ProjectiveCurve};
 use ark_ff::{Field, One, PrimeField};
 use ark_groth16::Proof;
@@ -218,7 +218,8 @@ fn gipa_tipp_mipp<E: Pairing>(
 
     transcript.append(b"inner-product-ab", ip_ab);
     transcript.append(b"comm-c", agg_c);
-    let mut c_inv: E::ScalarField = transcript.challenge_scalar::<E::ScalarField>(b"first-challenge");
+    let mut c_inv: E::ScalarField =
+        transcript.challenge_scalar::<E::ScalarField>(b"first-challenge");
     let mut c = c_inv.inverse().unwrap();
 
     let mut i = 0;
@@ -439,9 +440,10 @@ fn create_kzg_opening<G: AffineRepr>(
 
     let mut quotient_polynomial_coeffs = quotient_polynomial.coeffs;
     quotient_polynomial_coeffs.resize(srs_powers_alpha_table.len(), <G::ScalarField>::zero());
-    let quotient_repr = cfg_iter!(quotient_polynomial_coeffs)
-        .map(|s| s.into_repr())
-        .collect::<Vec<_>>();
+    // ToDo: remove!
+    // let quotient_repr = cfg_iter!(quotient_polynomial_coeffs)
+    //     .map(|s| s.into_repr())
+    //     .collect::<Vec<_>>();
 
     assert_eq!(
         quotient_polynomial_coeffs.len(),
@@ -457,8 +459,8 @@ fn create_kzg_opening<G: AffineRepr>(
     // used which is compatible with Groth16 CRS insteaf of the original paper
     // of Bunz'19
     let (a, b) = rayon::join(
-        || VariableBaseMSM::msm(&srs_powers_alpha_table, &quotient_repr),
-        || VariableBaseMSM::msm(&srs_powers_beta_table, &quotient_repr),
+        || VariableBaseMSM::msm(&srs_powers_alpha_table, &quotient_polynomial_coeffs),
+        || VariableBaseMSM::msm(&srs_powers_beta_table, &quotient_polynomial_coeffs),
     );
     Ok(KZGOpening::new_from_proj(a, b))
 }

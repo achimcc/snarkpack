@@ -11,7 +11,7 @@ macro_rules! try_par {
                     });)+
             });
         $(
-            let $name = $name.unwrap()?;
+            let $name = $name.unwrap();
         )+
     };
 }

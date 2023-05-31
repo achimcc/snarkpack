@@ -1,7 +1,7 @@
-use ark_ec::{AffineRepr, Group, CurveGroup, pairing::Pairing};
+use ark_ec::{pairing::Pairing, AffineRepr, CurveGroup, Group};
 // {AffineCurve, PairingEngine, ProjectiveCurve};
-use ark_ff::{Field, PrimeField, CyclotomicMultSubgroup};
-use ark_std::{rand::Rng, sync::Mutex, One, UniformRand, Zero};
+use ark_ff::{CyclotomicMultSubgroup, Field, PrimeField};
+use ark_std::{ops::Mul, rand::Rng, sync::Mutex, One, UniformRand, Zero};
 use rayon::prelude::*;
 
 use std::ops::MulAssign;
@@ -53,7 +53,10 @@ where
     ///
     /// Note the check is NOT randomized and there must be only up to ONE check
     /// only that can not be randomized when merging.
-    fn from_pair(result: <E as Pairing>::TargetField, exp: <E as Pairing>::TargetField) -> PairingCheck<E> {
+    fn from_pair(
+        result: <E as Pairing>::TargetField,
+        exp: <E as Pairing>::TargetField,
+    ) -> PairingCheck<E> {
         Self {
             left: result,
             right: exp,
@@ -69,11 +72,16 @@ where
     ///
     /// Note the check is NOT randomized and there must be only up to ONE check
     /// only that can not be randomized when merging.
-    pub fn from_products(lefts: Vec<<E as Pairing>::TargetField>, right: <E as Pairing>::TargetField) -> PairingCheck<E> {
-        let product = lefts.iter().fold(<E as Pairing>::TargetField::one(), |mut acc, l| {
-            acc *= l;
-            acc
-        });
+    pub fn from_products(
+        lefts: Vec<<E as Pairing>::TargetField>,
+        right: <E as Pairing>::TargetField,
+    ) -> PairingCheck<E> {
+        let product = lefts
+            .iter()
+            .fold(<E as Pairing>::TargetField::one(), |mut acc, l| {
+                acc *= l;
+                acc
+            });
         Self::from_pair(product, right)
     }
 
@@ -119,7 +127,7 @@ where
         if out != &<E as Pairing>::TargetField::one() {
             // we only need to make this expensive operation is the output is
             // not one since 1^r = 1
-            outt = outt.pow(&coeff.into_repr());
+            outt = outt.pow(&coeff);
         }
         PairingCheck {
             left: miller_out,
@@ -150,7 +158,7 @@ where
             ));
             return false;
         }
-        E::final_exponentiation(&self.left).unwrap() == self.right
+        E::final_exponentiation(&self.left) == Ok(self.right)
     }
 }
 
@@ -163,7 +171,10 @@ fn rand_fr<E: Pairing, R: Rng + Send>(r: &Mutex<R>) -> E::ScalarField {
         }
     }
 }
-fn mul_if_not_one<E: Pairing>(left: &mut <E as Pairing>::TargetField, right: &<E as Pairing>::TargetField) {
+fn mul_if_not_one<E: Pairing>(
+    left: &mut <E as Pairing>::TargetField,
+    right: &<E as Pairing>::TargetField,
+) {
     let one = <E as Pairing>::TargetField::one();
     if left == &one {
         *left = right.clone();

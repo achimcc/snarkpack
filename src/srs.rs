@@ -1,6 +1,6 @@
 use ark_ec::scalar_mul::fixed_base::FixedBase;
 // msm::FixedBaseMSM;
-use ark_ec::{AffineRepr, Group, CurveGroup, pairing::Pairing};
+use ark_ec::{pairing::Pairing, AffineRepr, CurveGroup, Group};
 // {AffineCurve, PairingEngine, ProjectiveCurve};
 use ark_ff::PrimeField;
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize, SerializationError};
@@ -243,8 +243,8 @@ impl<E: Pairing> GenericSRS<E> {
 pub fn setup_fake_srs<E: Pairing, R: Rng>(rng: &mut R, size: usize) -> GenericSRS<E> {
     let alpha = E::ScalarField::rand(rng);
     let beta = E::ScalarField::rand(rng);
-    let g = E::G1::prime_subgroup_generator();
-    let h = E::G2::prime_subgroup_generator();
+    let g = E::G1::generator();
+    let h = E::G2::generator();
 
     let mut g_alpha_powers = Vec::new();
     let mut g_beta_powers = Vec::new();
@@ -275,10 +275,10 @@ pub fn setup_fake_srs<E: Pairing, R: Rng>(rng: &mut R, size: usize) -> GenericSR
         });
     });
 
-    debug_assert!(h_alpha_powers[0] == E::G2Affine::prime_subgroup_generator());
-    debug_assert!(h_beta_powers[0] == E::G2Affine::prime_subgroup_generator());
-    debug_assert!(g_alpha_powers[0] == E::G1Affine::prime_subgroup_generator());
-    debug_assert!(g_beta_powers[0] == E::G1Affine::prime_subgroup_generator());
+    debug_assert!(h_alpha_powers[0] == E::G2Affine::generator());
+    debug_assert!(h_beta_powers[0] == E::G2Affine::generator());
+    debug_assert!(g_alpha_powers[0] == E::G1Affine::generator());
+    debug_assert!(g_beta_powers[0] == E::G1Affine::generator());
     GenericSRS {
         g_alpha_powers,
         g_beta_powers,
@@ -323,7 +323,9 @@ fn read_vec<G: CanonicalDeserialize, R: Read>(
     len: u32,
     mut r: R,
 ) -> Result<Vec<G>, SerializationError> {
-    (0..len).map(|_| G::deserialize_compressed(&mut r)).collect()
+    (0..len)
+        .map(|_| G::deserialize_compressed(&mut r))
+        .collect()
 }
 
 #[cfg(test)]

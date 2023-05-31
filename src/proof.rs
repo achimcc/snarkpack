@@ -1,6 +1,8 @@
-use ark_ec::{AffineRepr, Group, CurveGroup, pairing::Pairing};
+use ark_ec::{pairing::Pairing, AffineRepr, CurveGroup, Group};
 // {AffineCurve, PairingEngine, ProjectiveCurve};
-use ark_serialize::{CanonicalDeserialize, CanonicalSerialize, SerializationError, Valid, Compress};
+use ark_serialize::{
+    CanonicalDeserialize, CanonicalSerialize, Compress, SerializationError, Valid,
+};
 use std::io::{Read, Write};
 
 use super::Error;
@@ -91,8 +93,14 @@ impl<E: Pairing> AggregateProof<E> {
 #[derive(Debug, Clone)]
 pub struct GipaProof<E: Pairing> {
     pub nproofs: u32,
-    pub comms_ab: Vec<(commitment::Output<<E as Pairing>::TargetField>, commitment::Output<<E as Pairing>::TargetField>)>,
-    pub comms_c: Vec<(commitment::Output<<E as Pairing>::TargetField>, commitment::Output<<E as Pairing>::TargetField>)>,
+    pub comms_ab: Vec<(
+        commitment::Output<<E as Pairing>::TargetField>,
+        commitment::Output<<E as Pairing>::TargetField>,
+    )>,
+    pub comms_c: Vec<(
+        commitment::Output<<E as Pairing>::TargetField>,
+        commitment::Output<<E as Pairing>::TargetField>,
+    )>,
     pub z_ab: Vec<(<E as Pairing>::TargetField, <E as Pairing>::TargetField)>,
     pub z_c: Vec<(E::G1Affine, E::G1Affine)>,
     pub final_a: E::G1Affine,
@@ -309,15 +317,15 @@ mod tests {
 
     fn fake_proof() -> AggregateProof<Bls12> {
         // create pairing, as pairing results can be compressed
-        let p = G1Affine::prime_subgroup_generator();
-        let q = G2Affine::prime_subgroup_generator();
+        let p = G1Affine::generator();
+        let q = G2Affine::generator();
         let a = Bls12::pairing(p, q);
 
         let proof = AggregateProof::<Bls12> {
             com_ab: O(a, a),
             com_c: O(a, a),
             ip_ab: a,
-            agg_c: G1Affine::prime_subgroup_generator(),
+            agg_c: G1Affine::generator(),
             tmipp: TippMippProof::<Bls12> {
                 gipa: GipaProof {
                     nproofs: 4,
@@ -325,35 +333,17 @@ mod tests {
                     comms_c: vec![(O(a, a), O(a, a)), (O(a, a), O(a, a))],
                     z_ab: vec![(a, a), (a, a)],
                     z_c: vec![
-                        (
-                            G1Affine::prime_subgroup_generator(),
-                            G1Affine::prime_subgroup_generator(),
-                        ),
-                        (
-                            G1Affine::prime_subgroup_generator(),
-                            G1Affine::prime_subgroup_generator(),
-                        ),
+                        (G1Affine::generator(), G1Affine::generator()),
+                        (G1Affine::generator(), G1Affine::generator()),
                     ],
-                    final_a: G1Affine::prime_subgroup_generator(),
-                    final_b: G2Affine::prime_subgroup_generator(),
-                    final_c: G1Affine::prime_subgroup_generator(),
-                    final_vkey: (
-                        G2Affine::prime_subgroup_generator(),
-                        G2Affine::prime_subgroup_generator(),
-                    ),
-                    final_wkey: (
-                        G1Affine::prime_subgroup_generator(),
-                        G1Affine::prime_subgroup_generator(),
-                    ),
+                    final_a: G1Affine::generator(),
+                    final_b: G2Affine::generator(),
+                    final_c: G1Affine::generator(),
+                    final_vkey: (G2Affine::generator(), G2Affine::generator()),
+                    final_wkey: (G1Affine::generator(), G1Affine::generator()),
                 },
-                vkey_opening: KZGOpening(
-                    G2Affine::prime_subgroup_generator(),
-                    G2Affine::prime_subgroup_generator(),
-                ),
-                wkey_opening: KZGOpening(
-                    G1Affine::prime_subgroup_generator(),
-                    G1Affine::prime_subgroup_generator(),
-                ),
+                vkey_opening: KZGOpening(G2Affine::generator(), G2Affine::generator()),
+                wkey_opening: KZGOpening(G1Affine::generator(), G1Affine::generator()),
             },
         };
         proof
@@ -370,8 +360,8 @@ mod tests {
 
     #[test]
     fn test_proof_check() {
-        let p = G1Affine::prime_subgroup_generator();
-        let q = G2Affine::prime_subgroup_generator();
+        let p = G1Affine::generator();
+        let q = G2Affine::generator();
         let a = Bls12::pairing(p, q);
 
         let mut proof = fake_proof();
