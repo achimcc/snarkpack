@@ -1,4 +1,7 @@
-use ark_ec::{pairing::Pairing, AffineRepr, CurveGroup, Group};
+use ark_ec::{
+    pairing::{MillerLoopOutput, Pairing, PairingOutput},
+    AffineRepr, CurveGroup, Group,
+};
 // {AffineCurve, PairingEngine, ProjectiveCurve};
 use ark_ff::{CyclotomicMultSubgroup, Field, PrimeField};
 use ark_std::{ops::Mul, rand::Rng, sync::Mutex, One, UniformRand, Zero};
@@ -103,16 +106,13 @@ where
             .into_par_iter()
             .map(|(a, b)| {
                 let na = a.mul(coeff).into_affine();
-                (
-                    E::G1Prepared::from(na.into()),
-                    E::G2Prepared::from((**b).into()),
-                )
+                (E::G1Prepared::from(na), E::G2Prepared::from(**b))
             })
             .map(|(a, b)| E::miller_loop(a, b))
             .fold(
                 || <E as Pairing>::TargetField::one(),
                 |mut acc, res| {
-                    acc.mul_assign(&res);
+                    acc.mul_assign(&(res.0));
                     acc
                 },
             )
@@ -127,7 +127,7 @@ where
         if out != &<E as Pairing>::TargetField::one() {
             // we only need to make this expensive operation is the output is
             // not one since 1^r = 1
-            outt = outt.pow(&(coeff.as_ref()));
+            outt = outt.pow(&(coeff.into_bigint()));
         }
         PairingCheck {
             left: miller_out,
@@ -158,7 +158,7 @@ where
             ));
             return false;
         }
-        E::final_exponentiation(&self.left) == Ok(self.right.0)
+        E::final_exponentiation(MillerLoopOutput(self.left)) == Some(PairingOutput(self.right))
     }
 }
 

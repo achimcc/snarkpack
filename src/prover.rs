@@ -95,7 +95,7 @@ pub fn aggregate_proofs<E: Pairing + std::fmt::Debug, T: Transcript>(
         // compute C^r for the verifier
         let agg_c = ip::multiexponentiation::<E::G1Affine>(&refc, &refr_vec)
     };
-    let agg_c = agg_c?.into_affine();
+    let agg_c = agg_c.into_affine();
     // w^{r^{-1}}
     let wkey_r_inv = srs.wkey.scale(&r_inv)?;
 
@@ -108,7 +108,7 @@ pub fn aggregate_proofs<E: Pairing + std::fmt::Debug, T: Transcript>(
         &c,
         &wkey_r_inv,
         &r_vec,
-        &(ip_ab?),
+        &ip_ab.0,
         &agg_c,
     )?;
     debug_assert!({
@@ -119,7 +119,7 @@ pub fn aggregate_proofs<E: Pairing + std::fmt::Debug, T: Transcript>(
     Ok(AggregateProof {
         com_ab,
         com_c,
-        ip_ab: ip_ab?,
+        ip_ab: ip_ab.0,
         agg_c,
         tmipp: proof,
     })
@@ -281,8 +281,8 @@ fn gipa_tipp_mipp<E: Pairing>(
             transcript.append(b"zc_r", &zc_r);
             transcript.append(b"tab_l", &tab_l);
             transcript.append(b"tab_r", &tab_r);
-            transcript.append(b"tuc_l", &(tuc_l.map_err(Error::InvalidPairing)));
-            transcript.append(b"tuc_r", &tuc_r.map_err(Error::InvalidPairing));
+            transcript.append(b"tuc_l", &tuc_l);
+            transcript.append(b"tuc_r", &tuc_r);
             c_inv = transcript.challenge_scalar::<E::ScalarField>(b"challenge_i");
 
             // Optimization for multiexponentiation to rescale G2 elements with
@@ -315,8 +315,8 @@ fn gipa_tipp_mipp<E: Pairing>(
         // w_left + w_right^x
         wkey = wk_left.compress(&wk_right, &c)?;
 
-        comms_ab.push((tab_l?, tab_r?));
-        comms_c.push((tuc_l?, tuc_r?));
+        comms_ab.push((tab_l, tab_r));
+        comms_c.push((tuc_l, tuc_r));
         z_ab.push((zab_l.0, zab_r.0));
         // ToDo: error handling, no unwrap???
         z_c.push((zc_l.into_affine(), zc_r.into_affine()));
@@ -461,8 +461,14 @@ fn create_kzg_opening<G: AffineRepr>(
     // used which is compatible with Groth16 CRS insteaf of the original paper
     // of Bunz'19
     let (a, b) = rayon::join(
-        || VariableBaseMSM::msm(&srs_powers_alpha_table, &quotient_polynomial_coeffs).expect("msm for a failed!"),
-        || VariableBaseMSM::msm(&srs_powers_beta_table, &quotient_polynomial_coeffs).expect("msm for b failed!"),
+        || {
+            VariableBaseMSM::msm(&srs_powers_alpha_table, &quotient_polynomial_coeffs)
+                .expect("msm for a failed!")
+        },
+        || {
+            VariableBaseMSM::msm(&srs_powers_beta_table, &quotient_polynomial_coeffs)
+                .expect("msm for b failed!")
+        },
     );
     Ok(KZGOpening::new_from_proj(a, b))
 }

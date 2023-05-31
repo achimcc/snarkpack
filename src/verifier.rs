@@ -182,7 +182,8 @@ pub fn verify_aggregate_proof<E: Pairing + std::fmt::Debug, R: Rng + Send, T: Tr
         };
         // final value ip_ab is what we want to compare in the groth16
         // aggregated equation A * B
-        let check = PairingCheck::from_products(vec![left.0, middle.0, right.0], proof.ip_ab.clone());
+        let check =
+            PairingCheck::from_products(vec![left.0, middle.0, right.0], proof.ip_ab.clone());
         send_checks.send(check).unwrap();
     });
     let res = valid_rcv.recv().unwrap();

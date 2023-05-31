@@ -37,17 +37,18 @@ pub(crate) fn pairing_miller_affine<E: Pairing>(
 pub(crate) fn pairing<E: Pairing>(
     left: &[E::G1Affine],
     right: &[E::G2Affine],
-) -> Option<PairingOutput<E>> {
-    E::final_exponentiation(pairing_miller_affine::<E>(left, right)?)
+) -> Result<PairingOutput<E>, Error> {
+    let miller_result = pairing_miller_affine::<E>(left, right).ok_or(Error::InvalidPairing)?;
+    E::final_exponentiation(miller_result).ok_or(Error::InvalidPairing)
 }
 
 pub(crate) fn multiexponentiation<G: AffineRepr>(
     left: &[G],
     right: &[G::ScalarField],
-) -> Result<G::Group, usize> {
+) -> Result<G::Group, Error> {
     if left.len() != right.len() {
-        // ToDo: Error type usize, 0???
-        return Err(0);
+        // ToDo: check Error type!!!
+        return Err(Error::InvalidKeyLength);
     }
-    VariableBaseMSM::msm(left, right)
+    VariableBaseMSM::msm(left, right).map_err(|_| Error::InvalidIPVectorLength)
 }

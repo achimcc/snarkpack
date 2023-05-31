@@ -5,7 +5,7 @@ use ark_ec::{
     AffineRepr, CurveGroup, Group,
 };
 // {AffineCurve, PairingEngine, ProjectiveCurve};
-use ark_ff::{Field, PrimeField, CyclotomicMultSubgroup};
+use ark_ff::{CyclotomicMultSubgroup, Field, PrimeField};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize, SerializationError};
 use ark_std::{
     fmt::Debug,
@@ -156,13 +156,13 @@ pub struct Output<F: CanonicalSerialize + CanonicalDeserialize>(pub F, pub F);
 pub fn single_g1<E: Pairing>(
     vkey: &VKey<E>,
     a_vec: &[E::G1Affine],
-) -> Result<Output<<<E as Pairing>::TargetField as CyclotomicMultSubgroup>>, Error> {
+) -> Result<Output<<E as Pairing>::TargetField>, Error> {
     try_par! {
         let a = ip::pairing::<E>(a_vec, &vkey.a),
         let b = ip::pairing::<E>(a_vec, &vkey.b)
     };
     // ToDo: remove unwraps
-    Ok(Output(a.unwrap().0., b.unwrap().0))
+    Ok(Output(a.0, b.0))
 }
 
 /// Commits to a tuple of G1 vector and G2 vector in the following way:
@@ -184,10 +184,11 @@ pub fn pair<E: Pairing>(
         let u1 = ip::pairing::<E>(a, &vkey.b),
         let u2 = ip::pairing::<E>(&wkey.b, b)
     };
-    let mut t1 = t1.ok_or(Error::InvalidPairing)?;
-    let mut u1 = u1.ok_or(Error::InvalidPairing)?;
-    let u2 = u2.ok_or(Error::InvalidPairing)?;
     // (A * v)(w * B)
+    let mut t1 = t1.0;
+    let mut t2 = t2.0;
+    let mut u1 = u1.0;
+    let mut u2 = u2.0;
     t1.mul_assign(&t2);
     u1.mul_assign(&u2);
     Ok(Output(t1, u1))

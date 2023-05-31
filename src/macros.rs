@@ -1,5 +1,3 @@
-use crate::Error;
-
 macro_rules! try_par {
     ($(let $name:ident = $f:expr),+) => {
         $(
@@ -13,7 +11,7 @@ macro_rules! try_par {
                     });)+
             });
         $(
-            let $name = $name.unwrap().ok_or(Error::PairingError)?;
+            let $name = $name.unwrap()?;
         )+
     };
 }
