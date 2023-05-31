@@ -331,16 +331,16 @@ mod tests {
         let a = Bls12::pairing(p, q);
 
         let proof = AggregateProof::<Bls12> {
-            com_ab: O(a, a),
-            com_c: O(a, a),
-            ip_ab: a,
+            com_ab: O(a.0, a.0),
+            com_c: O(a.0, a.0),
+            ip_ab: a.0,
             agg_c: G1Affine::generator(),
             tmipp: TippMippProof::<Bls12> {
                 gipa: GipaProof {
                     nproofs: 4,
-                    comms_ab: vec![(O(a, a), O(a, a)), (O(a, a), O(a, a))],
-                    comms_c: vec![(O(a, a), O(a, a)), (O(a, a), O(a, a))],
-                    z_ab: vec![(a, a), (a, a)],
+                    comms_ab: vec![(O(a.0, a.0), O(a.0, a.0)), (O(a.0, a.0), O(a.0, a.0))],
+                    comms_c: vec![(O(a.0, a.0), O(a.0, a.0)), (O(a.0, a.0), O(a.0, a.0))],
+                    z_ab: vec![(a.0, a.0), (a.0, a.0)],
                     z_c: vec![
                         (G1Affine::generator(), G1Affine::generator()),
                         (G1Affine::generator(), G1Affine::generator()),
@@ -385,7 +385,7 @@ mod tests {
             .tmipp
             .gipa
             .comms_ab
-            .append(&mut vec![(Output(a, a), Output(a, a))]);
+            .append(&mut vec![(Output(a.0, a.0), Output(a.0, a.0))]);
         proof.parsing_check().expect_err("Proof should be invalid");
     }
 }

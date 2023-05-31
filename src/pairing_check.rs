@@ -199,7 +199,7 @@ mod test {
         let exp = Bls12::pairing(g1r.clone(), g2r.clone());
         let mr = Mutex::new(r);
         let tuple =
-            PairingCheck::<Bls12>::rand(&mr, &[(&g1r.into_affine(), &g2r.into_affine())], &exp);
+            PairingCheck::<Bls12>::rand(&mr, &[(&g1r.into_affine(), &g2r.into_affine())], &exp.0);
         assert!(tuple.verify());
         tuple
     }

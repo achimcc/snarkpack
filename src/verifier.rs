@@ -1,4 +1,4 @@
-use ark_ec::{pairing::Pairing, AffineRepr, CurveGroup, VariableBaseMSM, ScalarMul};
+use ark_ec::{pairing::Pairing, AffineRepr, CurveGroup, VariableBaseMSM};
 use ark_ff::{Field, PrimeField};
 use ark_groth16::PreparedVerifyingKey;
 use ark_std::{rand::Rng, sync::Mutex, One, Zero};
@@ -35,14 +35,14 @@ use std::time::Instant;
 /// number of proofs and public inputs (+100ms in our case). In the case of Filecoin, the only
 /// non-fixed part of the public inputs are the challenges derived from a seed. Even though this
 /// seed comes from a random beeacon, we are hashing this as a safety precaution.
-pub fn verify_aggregate_proof<E: Pairing + std::fmt::Debug + ScalarMul, R: Rng + Send, T: Transcript + Send>(
+pub fn verify_aggregate_proof<E: Pairing + std::fmt::Debug, R: Rng + Send, T: Transcript + Send>(
     ip_verifier_srs: &VerifierSRS<E>,
     pvk: &PreparedVerifyingKey<E>,
     public_inputs: &[Vec<<E as Pairing>::ScalarField>],
     proof: &AggregateProof<E>,
     rng: R,
     mut transcript: &mut T,
-) -> Result<(), Error> where <E as Pairing>::G1Affine: ScalarMul {
+) -> Result<(), Error> {
     dbg!("verify_aggregate_proof");
     proof.parsing_check()?;
     for pub_input in public_inputs {
@@ -102,7 +102,9 @@ pub fn verify_aggregate_proof<E: Pairing + std::fmt::Debug + ScalarMul, R: Rng +
         dbg!("checking aggregate pairing");
         let mut r_sum = r.pow(&[public_inputs.len() as u64]);
         r_sum.sub_assign(&<E as Pairing>::ScalarField::one());
-        let b = sub!(r, &<E as Pairing>::ScalarField::one()).inverse().unwrap();
+        let b = sub!(r, &<E as Pairing>::ScalarField::one())
+            .inverse()
+            .unwrap();
         r_sum.mul_assign(&b);
 
         // The following parts 3 4 5 are independently computing the parts of

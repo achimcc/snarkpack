@@ -347,7 +347,7 @@ mod test {
         GenericSRS::<Bls12>::read(&mut Cursor::new(&buffer)).expect("can't read the srs");
 
         // trying to read the first size
-        let read_size = u32::deserialize(Cursor::new(&buffer)).unwrap() as usize;
+        let read_size = u32::deserialize_compressed(Cursor::new(&buffer)).unwrap() as usize;
         assert_eq!(vec_len, read_size);
 
         // remove the previous size from the bufer - u32 = 4 bytes

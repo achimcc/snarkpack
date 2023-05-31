@@ -1,9 +1,6 @@
 use crate::ip;
 use crate::Error;
-use ark_ec::{
-    pairing::Pairing,
-    AffineRepr, CurveGroup,
-};
+use ark_ec::{pairing::Pairing, AffineRepr, CurveGroup};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use ark_std::{
     fmt::Debug,
@@ -194,6 +191,7 @@ mod tests {
     use super::*;
     use crate::srs::structured_generators_scalar_power;
     use ark_bls12_381::{Bls12_381 as Bls12, Fr, G1Projective, G2Projective};
+    use ark_ec::Group;
     use ark_std::UniformRand;
     use rand_core::SeedableRng;
 
