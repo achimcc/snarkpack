@@ -1,6 +1,7 @@
 use crate::ip;
 use crate::Error;
-use ark_ec::{AffineCurve, PairingEngine, ProjectiveCurve};
+use ark_ec::{AffineRepr, pairing::Pairing, CurveGroup, Group};
+// {AffineCurve, PairingEngine, ProjectiveCurve};
 use ark_ff::{Field, PrimeField};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize, SerializationError};
 use ark_std::{
@@ -40,7 +41,7 @@ use rayon::prelude::*;
 /// Key is a generic commitment key that is instanciated with g and h as basis,
 /// and a and b as powers.
 #[derive(Clone, Debug, CanonicalSerialize, CanonicalDeserialize)]
-pub struct Key<G: AffineCurve> {
+pub struct Key<G: AffineRepr> {
     /// Exponent is a
     pub a: Vec<G>,
     /// Exponent is b
@@ -50,16 +51,16 @@ pub struct Key<G: AffineCurve> {
 /// Commitment key used by the "single" commitment on G1 values as
 /// well as in the "pair" commtitment.
 /// It contains $\{h^a^i\}_{i=1}^n$ and $\{h^b^i\}_{i=1}^n$
-pub type VKey<E> = Key<<E as PairingEngine>::G2Affine>;
+pub type VKey<E> = Key<<E as Pairing>::G2Affine>;
 
 /// Commitment key used by the "pair" commitment. Note the sequence of
 /// powers starts at $n$ already.
 /// It contains $\{g^{a^{n+i}}\}_{i=1}^n$ and $\{g^{b^{n+i}}\}_{i=1}^n$
-pub type WKey<E> = Key<<E as PairingEngine>::G1Affine>;
+pub type WKey<E> = Key<<E as Pairing>::G1Affine>;
 
 impl<G> Key<G>
 where
-    G: AffineCurve,
+    G: AffineRepr,
 {
     /// Returns true if commitment keys have the exact required length.
     /// It is necessary for the IPP scheme to work that commitment
@@ -123,8 +124,8 @@ where
             .map(|(((left_a, left_b), right_a), right_b)| {
                 let mut ra = right_a.mul(scale.into_repr());
                 let mut rb = right_b.mul(scale.into_repr());
-                ra.add_assign_mixed(left_a);
-                rb.add_assign_mixed(left_b);
+                ra.add_assign(left_a);
+                rb.add_assign(left_b);
                 (ra.into_affine(), rb.into_affine())
             })
             .unzip();
@@ -148,10 +149,10 @@ pub struct Output<F: Field + CanonicalSerialize + CanonicalDeserialize>(pub F, p
 /// $T = \prod_{i=0}^n e(A_i, v_{1,i})$
 /// $U = \prod_{i=0}^n e(A_i, v_{2,i})$
 /// Output is $(T,U)$
-pub fn single_g1<E: PairingEngine>(
+pub fn single_g1<E: Pairing>(
     vkey: &VKey<E>,
     a_vec: &[E::G1Affine],
-) -> Result<Output<E::Fqk>, Error> {
+) -> Result<Output<<E as Pairing>::TargetField>, Error> {
     try_par! {
         let a = ip::pairing::<E>(a_vec, &vkey.a),
         let b = ip::pairing::<E>(a_vec, &vkey.b)
@@ -163,12 +164,12 @@ pub fn single_g1<E: PairingEngine>(
 /// $T = \prod_{i=0}^n e(A_i, v_{1,i})e(B_i,w_{1,i})$
 /// $U = \prod_{i=0}^n e(A_i, v_{2,i})e(B_i,w_{2,i})$
 /// Output is $(T,U)$
-pub fn pair<E: PairingEngine>(
+pub fn pair<E: Pairing>(
     vkey: &VKey<E>,
     wkey: &WKey<E>,
     a: &[E::G1Affine],
     b: &[E::G2Affine],
-) -> Result<Output<E::Fqk>, Error> {
+) -> Result<Output<<E as Pairing>::TargetField>, Error> {
     try_par! {
         // (A * v)
         let t1 = ip::pairing::<E>(a, &vkey.a),

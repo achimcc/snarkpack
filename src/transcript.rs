@@ -1,5 +1,5 @@
 use ark_ff::fields::Field;
-use ark_serialize::CanonicalSerialize;
+use ark_serialize::{CanonicalSerialize, Compress};
 use merlin::Transcript as Merlin;
 
 /// must be specific to the application.
@@ -22,8 +22,8 @@ impl Transcript for Merlin {
     }
 
     fn append<S: CanonicalSerialize>(&mut self, label: &'static [u8], element: &S) {
-        let mut buff: Vec<u8> = vec![0; element.serialized_size()];
-        element.serialize(&mut buff).expect("serialization failed");
+        let mut buff: Vec<u8> = vec![0; element.serialized_size(Compress::Yes)];
+        element.serialize_compressed(&mut buff).expect("serialization failed");
         self.append_message(label, &buff);
     }
 
