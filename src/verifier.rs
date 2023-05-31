@@ -1,5 +1,4 @@
-use ark_ec::{pairing::Pairing, AffineRepr, CurveGroup, Group, VariableBaseMSM};
-// {msm::VariableBaseMSM, AffineCurve, PairingEngine, ProjectiveCurve};
+use ark_ec::{pairing::Pairing, AffineRepr, CurveGroup, VariableBaseMSM, ScalarMul};
 use ark_ff::{Field, PrimeField};
 use ark_groth16::PreparedVerifyingKey;
 use ark_std::{rand::Rng, sync::Mutex, One, Zero};
@@ -36,14 +35,14 @@ use std::time::Instant;
 /// number of proofs and public inputs (+100ms in our case). In the case of Filecoin, the only
 /// non-fixed part of the public inputs are the challenges derived from a seed. Even though this
 /// seed comes from a random beeacon, we are hashing this as a safety precaution.
-pub fn verify_aggregate_proof<E: Pairing + std::fmt::Debug, R: Rng + Send, T: Transcript + Send>(
+pub fn verify_aggregate_proof<E: Pairing + std::fmt::Debug + ScalarMul, R: Rng + Send, T: Transcript + Send>(
     ip_verifier_srs: &VerifierSRS<E>,
     pvk: &PreparedVerifyingKey<E>,
-    public_inputs: &[Vec<E::ScalarField>],
+    public_inputs: &[Vec<<E as Pairing>::ScalarField>],
     proof: &AggregateProof<E>,
     rng: R,
     mut transcript: &mut T,
-) -> Result<(), Error> {
+) -> Result<(), Error> where <E as Pairing>::G1Affine: ScalarMul {
     dbg!("verify_aggregate_proof");
     proof.parsing_check()?;
     for pub_input in public_inputs {
@@ -63,7 +62,7 @@ pub fn verify_aggregate_proof<E: Pairing + std::fmt::Debug, R: Rng + Send, T: Tr
     // Random linear combination of proofs
     transcript.append(b"AB-commitment", &proof.com_ab);
     transcript.append(b"C-commitment", &proof.com_c);
-    let r = transcript.challenge_scalar::<E::ScalarField>(b"r-random-fiatshamir");
+    let r = transcript.challenge_scalar::<<E as Pairing>::ScalarField>(b"r-random-fiatshamir");
 
     // channels to send/recv pairing checks so we aggregate them all in a
     // loop - 9 places where we send pairing checks
@@ -102,8 +101,8 @@ pub fn verify_aggregate_proof<E: Pairing + std::fmt::Debug, R: Rng + Send, T: Tr
         // = (a^n - 1) / (a - 1)
         dbg!("checking aggregate pairing");
         let mut r_sum = r.pow(&[public_inputs.len() as u64]);
-        r_sum.sub_assign(&E::ScalarField::one());
-        let b = sub!(r, &E::ScalarField::one()).inverse().unwrap();
+        r_sum.sub_assign(&<E as Pairing>::ScalarField::one());
+        let b = sub!(r, &<E as Pairing>::ScalarField::one()).inverse().unwrap();
         r_sum.mul_assign(&b);
 
         // The following parts 3 4 5 are independently computing the parts of
@@ -150,7 +149,7 @@ pub fn verify_aggregate_proof<E: Pairing + std::fmt::Debug, R: Rng + Send, T: Tr
                     // NOTE: in this version it's not r^2j but simply r^j
 
                     let l = public_inputs[0].len();
-                    let mut g_ic = pvk.vk.gamma_abc_g1[0].into_group();
+                    let mut g_ic:<E as Pairing>::G1 = pvk.vk.gamma_abc_g1[0].into();
                     g_ic.mul_assign(r_sum);
 
                     let powers = r_vec_receiver.recv().unwrap();
@@ -169,7 +168,7 @@ pub fn verify_aggregate_proof<E: Pairing + std::fmt::Debug, R: Rng + Send, T: Tr
                     }).collect::<Vec<_>>();
 
                     // ToDo: Remove unwrap() ??
-                    let totsi: Self = VariableBaseMSM::msm(&pvk.vk.gamma_abc_g1[1..],&summed).unwrap();
+                    let totsi = <<E as Pairing>::G1 as VariableBaseMSM>::msm(&pvk.vk.gamma_abc_g1[1..],&summed).unwrap();
 
                     g_ic.add_assign(&totsi);
 

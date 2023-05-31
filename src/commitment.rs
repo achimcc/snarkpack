@@ -1,15 +1,12 @@
 use crate::ip;
 use crate::Error;
 use ark_ec::{
-    pairing::{Pairing, PairingOutput},
-    AffineRepr, CurveGroup, Group,
+    pairing::Pairing,
+    AffineRepr, CurveGroup,
 };
-// {AffineCurve, PairingEngine, ProjectiveCurve};
-use ark_ff::{CyclotomicMultSubgroup, Field, PrimeField};
-use ark_serialize::{CanonicalDeserialize, CanonicalSerialize, SerializationError};
+use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use ark_std::{
     fmt::Debug,
-    io::{Read, Write},
     ops::{AddAssign, MulAssign},
     vec::Vec,
 };
@@ -186,11 +183,9 @@ pub fn pair<E: Pairing>(
     };
     // (A * v)(w * B)
     let mut t1 = t1.0;
-    let mut t2 = t2.0;
     let mut u1 = u1.0;
-    let mut u2 = u2.0;
-    t1.mul_assign(&t2);
-    u1.mul_assign(&u2);
+    t1.mul_assign(&t2.0);
+    u1.mul_assign(&u2.0);
     Ok(Output(t1, u1))
 }
 

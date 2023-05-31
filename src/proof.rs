@@ -1,7 +1,6 @@
-use ark_ec::{pairing::Pairing, AffineRepr, CurveGroup, Group};
-// {AffineCurve, PairingEngine, ProjectiveCurve};
+use ark_ec::{pairing::Pairing, AffineRepr, CurveGroup};
 use ark_serialize::{
-    CanonicalDeserialize, CanonicalSerialize, Compress, SerializationError, Valid,
+    CanonicalDeserialize, CanonicalSerialize, Compress, SerializationError, Valid, Validate,
 };
 use std::io::{Read, Write};
 
@@ -134,7 +133,7 @@ impl<E: Pairing> GipaProof<E> {
 }
 
 impl<E: Pairing> CanonicalSerialize for GipaProof<E> {
-    fn serialize_with_mode(&self, compress: Compress) -> usize {
+    fn serialized_size(&self, compress: Compress) -> usize {
         let log_proofs = Self::log_proofs(self.nproofs as usize);
         (self.nproofs as u32).serialized_size(compress)
             + log_proofs
@@ -152,7 +151,12 @@ impl<E: Pairing> CanonicalSerialize for GipaProof<E> {
                     + self.final_vkey.serialized_size(compress)
                     + self.final_wkey.serialized_size(compress))
     }
-    fn serialize_uncompressed<W: Write>(&self, mut out: W) -> Result<(), SerializationError> {
+    // ToDo: handle compression flag
+    fn serialize_with_mode<W: Write>(
+        &self,
+        mut out: W,
+        _compress: Compress,
+    ) -> Result<(), SerializationError> {
         // number of proofs
         self.nproofs.serialize_compressed(&mut out)?;
 
@@ -212,7 +216,12 @@ impl<E> CanonicalDeserialize for GipaProof<E>
 where
     E: Pairing,
 {
-    fn deserialize_with_mode<R: Read>(mut source: R) -> Result<Self, SerializationError> {
+    // ToDo: handle compression and vaildate flags
+    fn deserialize_with_mode<R: Read>(
+        mut source: R,
+        _compress: Compress,
+        _validate: Validate,
+    ) -> Result<Self, SerializationError> {
         let nproofs = u32::deserialize_compressed(&mut source)?;
         if nproofs < 2 {
             return Err(SerializationError::InvalidData);

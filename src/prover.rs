@@ -1,9 +1,8 @@
-use ark_ec::{pairing::Pairing, AffineRepr, CurveGroup, Group, VariableBaseMSM};
-// {msm::VariableBaseMSM, AffineCurve, PairingEngine, ProjectiveCurve};
-use ark_ff::{Field, One, PrimeField};
+use ark_ec::{pairing::Pairing, AffineRepr, CurveGroup, VariableBaseMSM};
+use ark_ff::{Field, One};
 use ark_groth16::Proof;
 use ark_poly::polynomial::{univariate::DensePolynomial, DenseUVPolynomial};
-use ark_std::{cfg_iter, Zero};
+use ark_std::Zero;
 
 use rayon::prelude::*;
 use std::ops::{AddAssign, MulAssign, Neg};

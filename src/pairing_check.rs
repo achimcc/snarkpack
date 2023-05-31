@@ -1,9 +1,9 @@
 use ark_ec::{
     pairing::{MillerLoopOutput, Pairing, PairingOutput},
-    AffineRepr, CurveGroup, Group,
+    CurveGroup,
 };
 // {AffineCurve, PairingEngine, ProjectiveCurve};
-use ark_ff::{CyclotomicMultSubgroup, Field, PrimeField};
+use ark_ff::{Field, PrimeField};
 use ark_std::{ops::Mul, rand::Rng, sync::Mutex, One, UniformRand, Zero};
 use rayon::prelude::*;
 

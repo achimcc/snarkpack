@@ -16,8 +16,7 @@ pub use prover::*;
 pub use transcript::*;
 pub use verifier::*;
 
-use ark_ec::{AffineRepr, CurveGroup, Group};
-// {AffineCurve, ProjectiveCurve};
+use ark_ec::{AffineRepr, CurveGroup};
 use ark_ff::Field;
 use ark_std::ops::AddAssign;
 use rayon::prelude::*;

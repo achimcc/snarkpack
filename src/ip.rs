@@ -1,12 +1,9 @@
 use crate::Error;
 use ark_ec::{
     pairing::{MillerLoopOutput, Pairing, PairingOutput},
-    AffineRepr, CurveGroup, Group, VariableBaseMSM,
+    AffineRepr, VariableBaseMSM,
 };
-// {msm::VariableBaseMSM, AffineCurve, PairingEngine};
-use ark_ff::PrimeField;
-use ark_std::{cfg_iter, vec::Vec};
-use rayon::prelude::*;
+use ark_std::vec::Vec;
 
 pub(crate) fn pairing_miller_affine<E: Pairing>(
     left: &[E::G1Affine],
