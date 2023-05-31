@@ -129,7 +129,7 @@ pub fn verify_aggregate_proof<E: Pairing + std::fmt::Debug, R: Rng + Send, T: Tr
                 let alpha_g1_r_suma = pvk.vk.alpha_g1;
                 let alpha_g1_r_sum = alpha_g1_r_suma.mul(r_sum);
 
-                E::miller_loop(E::G1Prepared::from(alpha_g1_r_sum.into()), E::G2Prepared::from(pvk.vk.beta_g2.into()))
+                E::miller_loop(E::G1Prepared::from(alpha_g1_r_sum.into()), E::G2Prepared::from(pvk.vk.beta_g2))
 
             },
             // 4. Compute right part of the final pairing equation
@@ -168,7 +168,8 @@ pub fn verify_aggregate_proof<E: Pairing + std::fmt::Debug, R: Rng + Send, T: Tr
                         c
                     }).collect::<Vec<_>>();
 
-                    let totsi = VariableBaseMSM::msm(&pvk.vk.gamma_abc_g1[1..],&summed)?;
+                    // ToDo: Remove unwrap() ??
+                    let totsi: Self = VariableBaseMSM::msm(&pvk.vk.gamma_abc_g1[1..],&summed).unwrap();
 
                     g_ic.add_assign(&totsi);
 
@@ -181,7 +182,7 @@ pub fn verify_aggregate_proof<E: Pairing + std::fmt::Debug, R: Rng + Send, T: Tr
         };
         // final value ip_ab is what we want to compare in the groth16
         // aggregated equation A * B
-        let check = PairingCheck::from_products(vec![left, middle, right], proof.ip_ab.clone());
+        let check = PairingCheck::from_products(vec![left.0, middle.0, right.0], proof.ip_ab.clone());
         send_checks.send(check).unwrap();
     });
     let res = valid_rcv.recv().unwrap();
@@ -465,8 +466,8 @@ fn gipa_verify_tipp_mipp<E: Pairing, T: Transcript + Send>(
             let (zc_l, zc_r) = z_c;
 
             // ToDo: remove!
-            let c_repr: <<E as Pairing>::ScalarField as PrimeField>::BigInt = c.into();
-            let c_inv_repr: <<E as Pairing>::ScalarField as PrimeField>::BigInt = c_inv.into();
+            let c_repr: <<E as Pairing>::ScalarField as PrimeField>::BigInt = (*c).into();
+            let c_inv_repr: <<E as Pairing>::ScalarField as PrimeField>::BigInt = (*c_inv).into();
 
             // we multiple left side by x and right side by x^-1
             vec![
@@ -507,7 +508,7 @@ fn gipa_verify_tipp_mipp<E: Pairing, T: Transcript + Send>(
                     res.uc.mul_assign(&ux);
                 }
                 Op::ZC(zx, c) => {
-                    let zxp: E::G1 = zx.mul(c);
+                    let zxp: E::G1 = zx.mul_bigint(c);
                     res.zc.add_assign(&zxp);
                 }
             }

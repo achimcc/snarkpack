@@ -108,7 +108,7 @@ where
                     E::G2Prepared::from((**b).into()),
                 )
             })
-            .map(|(a, b)| E::miller_loop(&a, &b))
+            .map(|(a, b)| E::miller_loop(a, b))
             .fold(
                 || <E as Pairing>::TargetField::one(),
                 |mut acc, res| {
@@ -127,7 +127,7 @@ where
         if out != &<E as Pairing>::TargetField::one() {
             // we only need to make this expensive operation is the output is
             // not one since 1^r = 1
-            outt = outt.pow(&coeff);
+            outt = outt.pow(&(coeff.as_ref()));
         }
         PairingCheck {
             left: miller_out,
@@ -158,7 +158,7 @@ where
             ));
             return false;
         }
-        E::final_exponentiation(&self.left) == Ok(self.right)
+        E::final_exponentiation(&self.left) == Ok(self.right.0)
     }
 }
 

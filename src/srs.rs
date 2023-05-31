@@ -299,10 +299,10 @@ pub(crate) fn structured_generators_scalar_power<G: CurveGroup>(
         powers_of_scalar.push(pow_s);
         pow_s.mul_assign(s);
     }
-    let scalar_bits = G::ScalarField::size_in_bits();
+    let scalar_bits = G::ScalarField::MODULUS_BIT_SIZE as usize;
     let window_size = FixedBase::get_mul_window_size(num);
     let g_table = FixedBase::get_window_table::<G>(scalar_bits, window_size, g.clone());
-    let powers_of_g = FixedBase::multi_scalar_mul::<G>(
+    let powers_of_g = FixedBase::msm::<G>(
         //let powers_of_g = msm::fixed_base::multi_scalar_mul::<G>(
         scalar_bits,
         window_size,

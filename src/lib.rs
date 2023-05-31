@@ -44,7 +44,7 @@ pub(crate) fn compress<C: AffineRepr>(vec: &mut Vec<C>, split: usize, scaler: &C
             //let mut x = mul!(a_r.into_group(), scaler.clone());
             let sc = scaler.clone();
             let mut x = a_r.mul(sc);
-            x.add_assign(a_l);
+            x.add_assign(*a_l);
             *a_l = x.into_affine();
         });
     let len = left.len();
