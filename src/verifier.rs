@@ -169,7 +169,6 @@ pub fn verify_aggregate_proof<E: Pairing + std::fmt::Debug, R: Rng + Send, T: Tr
                         c
                     }).collect::<Vec<_>>();
 
-                    // ToDo: Remove unwrap() ??
                     let totsi = <<E as Pairing>::G1 as VariableBaseMSM>::msm(&pvk.vk.gamma_abc_g1[1..],&summed).unwrap();
 
                     g_ic.add_assign(&totsi);
@@ -467,7 +466,6 @@ fn gipa_verify_tipp_mipp<E: Pairing, T: Transcript + Send>(
             let (Output { 0: tc_l, 1: uc_l }, Output { 0: tc_r, 1: uc_r }) = comm_c;
             let (zc_l, zc_r) = z_c;
 
-            // ToDo: remove!
             let c_repr: <<E as Pairing>::ScalarField as PrimeField>::BigInt = (*c).into();
             let c_inv_repr: <<E as Pairing>::ScalarField as PrimeField>::BigInt = (*c_inv).into();
 

@@ -317,19 +317,17 @@ fn gipa_tipp_mipp<E: Pairing>(
         comms_ab.push((tab_l, tab_r));
         comms_c.push((tuc_l, tuc_r));
         z_ab.push((zab_l.0, zab_r.0));
-        // ToDo: error handling, no unwrap???
         z_c.push((zc_l.into_affine(), zc_r.into_affine()));
         challenges.push(c);
         challenges_inv.push(c_inv);
 
         i += 1;
     }
-    // ToDo: Enable checks!!!!
 
-    // assert!(m_a.len() == 1 && m_b.len() == 1);
-    // assert!(m_c.len() == 1 && m_r.len() == 1);
-    // assert!(vkey.a.len() == 1 && vkey.b.len() == 1);
-    // assert!(wkey.a.len() == 1 && wkey.b.len() == 1);
+    assert!(m_a.len() == 1 && m_b.len() == 1);
+    assert!(m_c.len() == 1 && m_r.len() == 1);
+    assert!(vkey.a.len() == 1 && vkey.b.len() == 1);
+    assert!(wkey.a.len() == 1 && wkey.b.len() == 1);
 
     let (final_a, final_b, final_c) = (m_a[0], m_b[0], m_c[0]);
     let (final_vkey, final_wkey) = (vkey.first(), wkey.first());
@@ -441,10 +439,6 @@ fn create_kzg_opening<G: AffineRepr>(
 
     let mut quotient_polynomial_coeffs = quotient_polynomial.coeffs;
     quotient_polynomial_coeffs.resize(srs_powers_alpha_table.len(), <G::ScalarField>::zero());
-    // ToDo: remove!
-    // let quotient_repr = cfg_iter!(quotient_polynomial_coeffs)
-    //     .map(|s| s.into_repr())
-    //     .collect::<Vec<_>>();
 
     assert_eq!(
         quotient_polynomial_coeffs.len(),

@@ -151,53 +151,52 @@ impl<E: Pairing> CanonicalSerialize for GipaProof<E> {
                     + self.final_vkey.serialized_size(compress)
                     + self.final_wkey.serialized_size(compress))
     }
-    // ToDo: handle compression flag
     fn serialize_with_mode<W: Write>(
         &self,
         mut out: W,
-        _compress: Compress,
+        compress: Compress,
     ) -> Result<(), SerializationError> {
         // number of proofs
-        self.nproofs.serialize_compressed(&mut out)?;
+        self.nproofs.serialize_with_mode(&mut out, compress)?;
 
         let log_proofs = Self::log_proofs(self.nproofs as usize);
         assert_eq!(self.comms_ab.len(), log_proofs);
 
         // comms_ab
         for (x, y) in &self.comms_ab {
-            x.serialize_compressed(&mut out)?;
-            y.serialize_compressed(&mut out)?;
+            x.serialize_with_mode(&mut out, compress)?;
+            y.serialize_with_mode(&mut out, compress)?;
         }
 
         assert_eq!(self.comms_c.len(), log_proofs);
         // comms_c
         for (x, y) in &self.comms_c {
-            x.serialize_compressed(&mut out)?;
-            y.serialize_compressed(&mut out)?;
+            x.serialize_with_mode(&mut out, compress)?;
+            y.serialize_with_mode(&mut out, compress)?;
         }
 
         assert_eq!(self.z_ab.len(), log_proofs);
         // z_ab
         for (x, y) in &self.z_ab {
-            x.serialize_compressed(&mut out)?;
-            y.serialize_compressed(&mut out)?;
+            x.serialize_with_mode(&mut out, compress)?;
+            y.serialize_with_mode(&mut out, compress)?;
         }
 
         assert_eq!(self.z_c.len(), log_proofs);
         // z_c
         for (x, y) in &self.z_c {
-            x.serialize_compressed(&mut out)?;
-            y.serialize_compressed(&mut out)?;
+            x.serialize_with_mode(&mut out, compress)?;
+            y.serialize_with_mode(&mut out, compress)?;
         }
 
         // final values of the loop
-        self.final_a.serialize_compressed(&mut out)?;
-        self.final_b.serialize_compressed(&mut out)?;
-        self.final_c.serialize_compressed(&mut out)?;
+        self.final_a.serialize_with_mode(&mut out, compress)?;
+        self.final_b.serialize_with_mode(&mut out, compress)?;
+        self.final_c.serialize_with_mode(&mut out, compress)?;
 
         // final commitment keys
-        self.final_vkey.serialize_compressed(&mut out)?;
-        self.final_wkey.serialize_compressed(&mut out)?;
+        self.final_vkey.serialize_with_mode(&mut out, compress)?;
+        self.final_wkey.serialize_with_mode(&mut out, compress)?;
 
         Ok(())
     }
@@ -216,76 +215,115 @@ impl<E> CanonicalDeserialize for GipaProof<E>
 where
     E: Pairing,
 {
-    // ToDo: handle compression and vaildate flags
     fn deserialize_with_mode<R: Read>(
         mut source: R,
-        _compress: Compress,
-        _validate: Validate,
+        compress: Compress,
+        validate: Validate,
     ) -> Result<Self, SerializationError> {
-        let nproofs = u32::deserialize_compressed(&mut source)?;
-        if nproofs < 2 {
-            return Err(SerializationError::InvalidData);
-        }
+        let result = {
+            let nproofs = u32::deserialize_compressed(&mut source)?;
+            if nproofs < 2 {
+                return Err(SerializationError::InvalidData);
+            }
 
-        let log_proofs = Self::log_proofs(nproofs as usize);
+            let log_proofs = Self::log_proofs(nproofs as usize);
 
-        let mut comms_ab = Vec::with_capacity(log_proofs);
-        for _ in 0..log_proofs {
-            comms_ab.push((
-                Output::<<E as Pairing>::TargetField>::deserialize_compressed(&mut source)?,
-                Output::<<E as Pairing>::TargetField>::deserialize_compressed(&mut source)?,
-            ));
-        }
+            let mut comms_ab = Vec::with_capacity(log_proofs);
+            for _ in 0..log_proofs {
+                comms_ab.push((
+                    Output::<<E as Pairing>::TargetField>::deserialize_with_mode(
+                        &mut source,
+                        compress,
+                        validate,
+                    )?,
+                    Output::<<E as Pairing>::TargetField>::deserialize_with_mode(
+                        &mut source,
+                        compress,
+                        validate,
+                    )?,
+                ));
+            }
 
-        let mut comms_c = Vec::with_capacity(log_proofs);
-        for _ in 0..log_proofs {
-            comms_c.push((
-                Output::<<E as Pairing>::TargetField>::deserialize_compressed(&mut source)?,
-                Output::<<E as Pairing>::TargetField>::deserialize_compressed(&mut source)?,
-            ));
-        }
+            let mut comms_c = Vec::with_capacity(log_proofs);
+            for _ in 0..log_proofs {
+                comms_c.push((
+                    Output::<<E as Pairing>::TargetField>::deserialize_with_mode(
+                        &mut source,
+                        compress,
+                        validate,
+                    )?,
+                    Output::<<E as Pairing>::TargetField>::deserialize_with_mode(
+                        &mut source,
+                        compress,
+                        validate,
+                    )?,
+                ));
+            }
 
-        let mut z_ab = Vec::with_capacity(log_proofs);
-        for _ in 0..log_proofs {
-            z_ab.push((
-                <E as Pairing>::TargetField::deserialize_compressed(&mut source)?,
-                <E as Pairing>::TargetField::deserialize_compressed(&mut source)?,
-            ));
-        }
+            let mut z_ab = Vec::with_capacity(log_proofs);
+            for _ in 0..log_proofs {
+                z_ab.push((
+                    <E as Pairing>::TargetField::deserialize_with_mode(
+                        &mut source,
+                        compress,
+                        validate,
+                    )?,
+                    <E as Pairing>::TargetField::deserialize_with_mode(
+                        &mut source,
+                        compress,
+                        validate,
+                    )?,
+                ));
+            }
 
-        let mut z_c = Vec::with_capacity(log_proofs);
-        for _ in 0..log_proofs {
-            z_c.push((
-                E::G1Affine::deserialize_compressed(&mut source)?,
-                E::G1Affine::deserialize_compressed(&mut source)?,
-            ));
-        }
+            let mut z_c = Vec::with_capacity(log_proofs);
+            for _ in 0..log_proofs {
+                z_c.push((
+                    E::G1Affine::deserialize_with_mode(&mut source, compress, validate)?,
+                    E::G1Affine::deserialize_with_mode(&mut source, compress, validate)?,
+                ));
+            }
 
-        let final_a = E::G1Affine::deserialize_compressed(&mut source)?;
-        let final_b = E::G2Affine::deserialize_compressed(&mut source)?;
-        let final_c = E::G1Affine::deserialize_compressed(&mut source)?;
+            let final_a = E::G1Affine::deserialize_with_mode(&mut source, compress, validate)?;
+            let final_b = E::G2Affine::deserialize_with_mode(&mut source, compress, validate)?;
+            let final_c = E::G1Affine::deserialize_with_mode(&mut source, compress, validate)?;
 
-        let final_vkey = (
-            E::G2Affine::deserialize_compressed(&mut source)?,
-            E::G2Affine::deserialize_compressed(&mut source)?,
-        );
-        let final_wkey = (
-            E::G1Affine::deserialize_compressed(&mut source)?,
-            E::G1Affine::deserialize_compressed(&mut source)?,
-        );
+            let final_vkey = (
+                E::G2Affine::deserialize_with_mode(&mut source, compress, validate)?,
+                E::G2Affine::deserialize_with_mode(&mut source, compress, validate)?,
+            );
+            let final_wkey = (
+                E::G1Affine::deserialize_with_mode(&mut source, compress, validate)?,
+                E::G1Affine::deserialize_with_mode(&mut source, compress, validate)?,
+            );
 
-        Ok(GipaProof {
-            nproofs,
-            comms_ab,
-            comms_c,
-            z_ab,
-            z_c,
-            final_a,
-            final_b,
-            final_c,
-            final_vkey,
-            final_wkey,
-        })
+            if let Validate::Yes = validate {
+                nproofs.check()?;
+                comms_ab.check()?;
+                comms_c.check()?;
+                z_ab.check()?;
+                z_c.check()?;
+                final_a.check()?;
+                final_b.check()?;
+                final_c.check()?;
+                final_vkey.check()?;
+                final_wkey.check()?;
+            }
+
+            GipaProof {
+                nproofs,
+                comms_ab,
+                comms_c,
+                z_ab,
+                z_c,
+                final_a,
+                final_b,
+                final_c,
+                final_vkey,
+                final_wkey,
+            }
+        };
+        Ok(result)
     }
 }
 

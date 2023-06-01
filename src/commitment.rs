@@ -1,6 +1,7 @@
 use crate::ip;
 use crate::Error;
 use ark_ec::{pairing::Pairing, AffineRepr, CurveGroup};
+use ark_ff::CyclotomicMultSubgroup;
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use ark_std::{
     fmt::Debug,
@@ -140,8 +141,10 @@ where
 
 /// Both commitment outputs a pair of $F_q^k$ element.
 #[derive(PartialEq, CanonicalSerialize, CanonicalDeserialize, Clone, Debug)]
-// ToDo: add correct trait!
-pub struct Output<F: CanonicalSerialize + CanonicalDeserialize>(pub F, pub F);
+pub struct Output<F: CanonicalSerialize + CanonicalDeserialize + CyclotomicMultSubgroup>(
+    pub F,
+    pub F,
+);
 
 /// Commits to a single vector of G1 elements in the following way:
 /// $T = \prod_{i=0}^n e(A_i, v_{1,i})$
@@ -155,7 +158,6 @@ pub fn single_g1<E: Pairing>(
         let a = ip::pairing::<E>(a_vec, &vkey.a),
         let b = ip::pairing::<E>(a_vec, &vkey.b)
     };
-    // ToDo: remove unwraps
     Ok(Output(a.0, b.0))
 }
 
@@ -168,7 +170,6 @@ pub fn pair<E: Pairing>(
     wkey: &WKey<E>,
     a: &[E::G1Affine],
     b: &[E::G2Affine],
-    // ToDo: Output<PairingOutput>???
 ) -> Result<Output<<E as Pairing>::TargetField>, Error> {
     try_par! {
         // (A * v)
