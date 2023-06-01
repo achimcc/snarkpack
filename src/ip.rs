@@ -20,12 +20,6 @@ pub(crate) fn pairing_miller_affine<E: Pairing>(
         .iter()
         .map(|e| E::G2Prepared::from(*e))
         .collect::<Vec<_>>();
-    // ToDo: remove
-    // let pairs: Vec<(E::G1Prepared, E::G2Prepared)> = left
-    //     .par_iter()
-    //     .map(|e| E::G1Prepared::from(*e))
-    //     .zip(right.par_iter().map(|e| E::G2Prepared::from(*e)))
-    //     .collect::<Vec<_>>();
 
     Some(E::multi_miller_loop(left, right))
 }
@@ -44,8 +38,7 @@ pub(crate) fn multiexponentiation<G: AffineRepr>(
     right: &[G::ScalarField],
 ) -> Result<G::Group, Error> {
     if left.len() != right.len() {
-        // ToDo: check Error type!!!
-        return Err(Error::InvalidKeyLength);
+        return Err(Error::InvalidPairing);
     }
     VariableBaseMSM::msm(left, right).map_err(|_| Error::InvalidIPVectorLength)
 }
