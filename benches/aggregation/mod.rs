@@ -3,6 +3,7 @@ use ark_ff::One;
 use ark_groth16::{prepare_verifying_key, Groth16};
 use snarkpack;
 use snarkpack::transcript::Transcript;
+
 mod constraints;
 use constraints::Benchmark;
 use rand_core::SeedableRng;
