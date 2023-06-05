@@ -195,7 +195,6 @@ mod tests {
     use ark_ec::Group;
     use ark_std::UniformRand;
     use rand_core::SeedableRng;
-
     #[test]
     fn test_commit_single() {
         let n = 6;
