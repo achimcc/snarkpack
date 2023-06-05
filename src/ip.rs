@@ -8,9 +8,9 @@ use ark_std::vec::Vec;
 pub(crate) fn pairing_miller_affine<E: Pairing>(
     left: &[E::G1Affine],
     right: &[E::G2Affine],
-) -> Option<MillerLoopOutput<E>> {
+) -> Result<MillerLoopOutput<E>, Error> {
     if left.len() != right.len() {
-        return None;
+        return Err(Error::InvalidIPVectorLength);
     }
     let left = left
         .iter()
@@ -21,7 +21,7 @@ pub(crate) fn pairing_miller_affine<E: Pairing>(
         .map(|e| E::G2Prepared::from(*e))
         .collect::<Vec<_>>();
 
-    Some(E::multi_miller_loop(left, right))
+    Ok(E::multi_miller_loop(left, right))
 }
 
 /// Returns the miller loop result of the inner pairing product
@@ -29,7 +29,7 @@ pub(crate) fn pairing<E: Pairing>(
     left: &[E::G1Affine],
     right: &[E::G2Affine],
 ) -> Result<PairingOutput<E>, Error> {
-    let miller_result = pairing_miller_affine::<E>(left, right).ok_or(Error::InvalidPairing)?;
+    let miller_result = pairing_miller_affine::<E>(left, right)?;
     E::final_exponentiation(miller_result).ok_or(Error::InvalidPairing)
 }
 
