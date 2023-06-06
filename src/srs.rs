@@ -219,15 +219,15 @@ impl<E: Pairing> GenericSRS<E> {
     }
 
     pub fn read<R: Read>(mut reader: R) -> Result<Self, Error> {
-        let len = u32::deserialize_compressed(&mut reader).map_err(|e| Error::Serialization(e))?;
+        let len = u32::deserialize_compressed(&mut reader).map_err(Error::Serialization)?;
         if len > MAX_SRS_SIZE as u32 {
             return Err(Error::InvalidSRS("SRS len > maximum".to_string()));
         }
 
-        let g_alpha_powers = read_vec(len, &mut reader).map_err(|e| Error::Serialization(e))?;
-        let g_beta_powers = read_vec(len, &mut reader).map_err(|e| Error::Serialization(e))?;
-        let h_alpha_powers = read_vec(len, &mut reader).map_err(|e| Error::Serialization(e))?;
-        let h_beta_powers = read_vec(len, &mut reader).map_err(|e| Error::Serialization(e))?;
+        let g_alpha_powers = read_vec(len, &mut reader).map_err(Error::Serialization)?;
+        let g_beta_powers = read_vec(len, &mut reader).map_err(Error::Serialization)?;
+        let h_alpha_powers = read_vec(len, &mut reader).map_err(Error::Serialization)?;
+        let h_beta_powers = read_vec(len, &mut reader).map_err(Error::Serialization)?;
 
         Ok(Self {
             g_alpha_powers,
@@ -301,7 +301,7 @@ pub(crate) fn structured_generators_scalar_power<G: CurveGroup>(
     }
     let scalar_bits = G::ScalarField::MODULUS_BIT_SIZE as usize;
     let window_size = FixedBase::get_mul_window_size(num);
-    let g_table = FixedBase::get_window_table::<G>(scalar_bits, window_size, g.clone());
+    let g_table = FixedBase::get_window_table::<G>(scalar_bits, window_size, *g);
     let powers_of_g = FixedBase::msm::<G>(
         //let powers_of_g = msm::fixed_base::multi_scalar_mul::<G>(
         scalar_bits,

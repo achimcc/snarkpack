@@ -511,7 +511,7 @@ fn polynomial_coefficients_from_transcript<F: Field>(transcript: &[F], r_shift: 
             power_2_r = power_2_r.square();
         }
         for j in 0..n {
-            let coeff = coefficients[j] * (*x * &power_2_r);
+            let coeff = coefficients[j] * (*x * power_2_r);
             coefficients.push(coeff);
         }
     }

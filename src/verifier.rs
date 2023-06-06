@@ -41,7 +41,7 @@ pub fn verify_aggregate_proof<E: Pairing + std::fmt::Debug, R: Rng + Send, T: Tr
     public_inputs: &[Vec<<E as Pairing>::ScalarField>],
     proof: &AggregateProof<E>,
     rng: R,
-    mut transcript: &mut T,
+    transcript: &mut T,
 ) -> Result<(), Error> {
     dbg!("verify_aggregate_proof");
     proof.parsing_check()?;
@@ -88,7 +88,7 @@ pub fn verify_aggregate_proof<E: Pairing + std::fmt::Debug, R: Rng + Send, T: Tr
                 ip_verifier_srs,
                 proof,
                 &r, // we give the extra r as it's not part of the proof itself - it is simply used on top for the groth16 aggregation
-                &mut transcript,
+                transcript,
                 &mut_rng,
                 checkclone,
             );
@@ -100,7 +100,7 @@ pub fn verify_aggregate_proof<E: Pairing + std::fmt::Debug, R: Rng + Send, T: Tr
         // SUM a^i = (1 - a^n) / (1 - a) = -(1-a^n)/-(1-a)
         // = (a^n - 1) / (a - 1)
         dbg!("checking aggregate pairing");
-        let mut r_sum = r.pow(&[public_inputs.len() as u64]);
+        let mut r_sum = r.pow([public_inputs.len() as u64]);
         r_sum.sub_assign(&<E as Pairing>::ScalarField::one());
         let b = sub!(r, &<E as Pairing>::ScalarField::one())
             .inverse()
@@ -173,7 +173,7 @@ pub fn verify_aggregate_proof<E: Pairing + std::fmt::Debug, R: Rng + Send, T: Tr
 
                     g_ic.add_assign(&totsi);
 
-                    let ml = E::miller_loop(E::G1Prepared::from(g_ic.into_affine()), E::G2Prepared::from(pvk.vk.gamma_g2.clone()));
+                    let ml = E::miller_loop(E::G1Prepared::from(g_ic.into_affine()), E::G2Prepared::from(pvk.vk.gamma_g2));
                     let elapsed = now.elapsed().as_millis();
                     dbg!("table generation: {}ms", elapsed);
 
@@ -182,8 +182,7 @@ pub fn verify_aggregate_proof<E: Pairing + std::fmt::Debug, R: Rng + Send, T: Tr
         };
         // final value ip_ab is what we want to compare in the groth16
         // aggregated equation A * B
-        let check =
-            PairingCheck::from_products(vec![left.0, middle.0, right.0], proof.ip_ab.clone());
+        let check = PairingCheck::from_products(vec![left.0, middle.0, right.0], proof.ip_ab);
         send_checks.send(check).unwrap();
     });
     let res = valid_rcv.recv().unwrap();
@@ -285,14 +284,14 @@ fn verify_tipp_mipp<E: Pairing, R: Rng + Send, T: Transcript + Send>(
         // Verify base inner product commitment
         // Z ==  c ^ r
         let final_z =
-            ip::multiexponentiation::<E::G1Affine>(&[final_c.clone()], &[final_r]),
+            ip::multiexponentiation::<E::G1Affine>(&[*final_c], &[final_r]),
         // Check commiment correctness
         // T = e(C,v1)
         //let _check_t = tclone.send(PairingCheck::rand(&rng,&[(final_c,&fvkey.0)],final_tc)).unwrap(),
-        let pcheckt = PairingCheck::rand(&rng,&[(final_c,&fvkey.0)],final_tc),
+        let pcheckt = PairingCheck::rand(rng,&[(final_c,&fvkey.0)],final_tc),
         // U = e(A,v2)
         //let _check_u = uclone.send(PairingCheck::rand(&rng,&[(final_c,&fvkey.1)],final_uc)).unwrap()
-        let pchecku = PairingCheck::rand(&rng,&[(final_c,&fvkey.1)],final_uc)
+        let pchecku = PairingCheck::rand(rng,&[(final_c,&fvkey.1)],final_uc)
     };
 
     tclone.send(pcheckt).unwrap();
