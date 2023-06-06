@@ -135,7 +135,7 @@ impl<E: Pairing> GipaProof<E> {
 impl<E: Pairing> CanonicalSerialize for GipaProof<E> {
     fn serialized_size(&self, compress: Compress) -> usize {
         let log_proofs = Self::log_proofs(self.nproofs as usize);
-        (self.nproofs as u32).serialized_size(compress)
+        self.nproofs.serialized_size(compress)
             + log_proofs
                 * (self.comms_ab[0].0.serialized_size(compress)
                     + self.comms_ab[0].1.serialized_size(compress)
