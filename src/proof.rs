@@ -74,7 +74,7 @@ impl<E: Pairing> AggregateProof<E> {
     /// `CanonicalSerialize`.
     pub fn write<W: Write>(&self, mut out: W) -> Result<(), Error> {
         self.serialize_compressed(&mut out)
-            .map_err(|e| Error::Serialization(e))
+            .map_err(Error::Serialization)
     }
 
     /// Reads the aggregate proof to the given destination. This method is for
@@ -82,7 +82,7 @@ impl<E: Pairing> AggregateProof<E> {
     /// another arkwork protocol, you can use the underlying implementation of
     /// `CanonicalSerialize`.
     pub fn read<R: Read>(mut source: R) -> Result<Self, Error> {
-        Self::deserialize_compressed(&mut source).map_err(|e| Error::Serialization(e))
+        Self::deserialize_compressed(&mut source).map_err(Error::Serialization)
     }
 }
 
