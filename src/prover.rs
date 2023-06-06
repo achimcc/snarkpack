@@ -452,7 +452,7 @@ fn create_kzg_opening<G: AffineRepr>(
     // of Bunz'19
     let (a, b) = rayon::join(
         || {
-            VariableBaseMSM::msm(&srs_powers_alpha_table, &quotient_polynomial_coeffs)
+            VariableBaseMSM::msm(srs_powers_alpha_table, &quotient_polynomial_coeffs)
                 .expect("msm for a failed!")
         },
         || {
