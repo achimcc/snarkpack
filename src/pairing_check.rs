@@ -27,6 +27,12 @@ pub struct PairingCheck<E: Pairing> {
     non_randomized: u8,
 }
 
+impl<E: Pairing> Default for PairingCheck<E> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<E> PairingCheck<E>
 where
     E: Pairing,
