@@ -37,7 +37,7 @@ impl Transcript for Merlin {
         loop {
             match F::from_random_bytes(&buf) {
                 Some(e) => {
-                    if e.inverse().is_some() {
+                    if let Some(_) = e.inverse() {
                         return e;
                     } else {
                         continue;

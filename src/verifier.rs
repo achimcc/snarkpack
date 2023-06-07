@@ -41,7 +41,7 @@ pub fn verify_aggregate_proof<E: Pairing + std::fmt::Debug, R: Rng + Send, T: Tr
     public_inputs: &[Vec<<E as Pairing>::ScalarField>],
     proof: &AggregateProof<E>,
     rng: R,
-    transcript: &mut T,
+    mut transcript: &mut T,
 ) -> Result<(), Error> {
     dbg!("verify_aggregate_proof");
     proof.parsing_check()?;
@@ -88,7 +88,7 @@ pub fn verify_aggregate_proof<E: Pairing + std::fmt::Debug, R: Rng + Send, T: Tr
                 ip_verifier_srs,
                 proof,
                 &r, // we give the extra r as it's not part of the proof itself - it is simply used on top for the groth16 aggregation
-                transcript,
+                &mut transcript,
                 &mut_rng,
                 checkclone,
             );
@@ -100,7 +100,7 @@ pub fn verify_aggregate_proof<E: Pairing + std::fmt::Debug, R: Rng + Send, T: Tr
         // SUM a^i = (1 - a^n) / (1 - a) = -(1-a^n)/-(1-a)
         // = (a^n - 1) / (a - 1)
         dbg!("checking aggregate pairing");
-        let mut r_sum = r.pow([public_inputs.len() as u64]);
+        let mut r_sum = r.pow(&[public_inputs.len() as u64]);
         r_sum.sub_assign(&<E as Pairing>::ScalarField::one());
         let b = sub!(r, &<E as Pairing>::ScalarField::one())
             .inverse()
@@ -173,7 +173,7 @@ pub fn verify_aggregate_proof<E: Pairing + std::fmt::Debug, R: Rng + Send, T: Tr
 
                     g_ic.add_assign(&totsi);
 
-                    let ml = E::miller_loop(E::G1Prepared::from(g_ic.into_affine()), E::G2Prepared::from(pvk.vk.gamma_g2));
+                    let ml = E::miller_loop(E::G1Prepared::from(g_ic.into_affine()), E::G2Prepared::from(pvk.vk.gamma_g2.clone()));
                     let elapsed = now.elapsed().as_millis();
                     dbg!("table generation: {}ms", elapsed);
 
@@ -182,7 +182,8 @@ pub fn verify_aggregate_proof<E: Pairing + std::fmt::Debug, R: Rng + Send, T: Tr
         };
         // final value ip_ab is what we want to compare in the groth16
         // aggregated equation A * B
-        let check = PairingCheck::from_products(vec![left.0, middle.0, right.0], proof.ip_ab);
+        let check =
+            PairingCheck::from_products(vec![left.0, middle.0, right.0], proof.ip_ab.clone());
         send_checks.send(check).unwrap();
     });
     let res = valid_rcv.recv().unwrap();
@@ -208,7 +209,7 @@ fn verify_tipp_mipp<E: Pairing, R: Rng + Send, T: Transcript + Send>(
     let now = Instant::now();
     // (T,U), Z for TIPP and MIPP  and all challenges
     let (final_res, final_r, challenges, challenges_inv) =
-        gipa_verify_tipp_mipp(proof, r_shift, transcript);
+        gipa_verify_tipp_mipp(&proof, r_shift, transcript);
     dbg!(
         "TIPP verify: gipa verify tipp {}ms",
         now.elapsed().as_millis()
@@ -271,27 +272,27 @@ fn verify_tipp_mipp<E: Pairing, R: Rng + Send, T: Transcript + Send>(
         // TIPP
         // z = e(A,B)
         //let _check_z = zclone.send(PairingCheck::rand(&rng,&[(final_a, final_b)], final_zab)).unwrap(),
-        let pcheckz = PairingCheck::rand(rng,&[(final_a, final_b)], final_zab),
+        let pcheckz = PairingCheck::rand(&rng,&[(final_a, final_b)], final_zab),
         //  final_aB.0 = T = e(A,v1)e(w1,B)
         //let check_ab0 = ab0clone.send(PairingCheck::rand(&rng,&[(final_a, &fvkey.0),(&fwkey.0, final_b)], final_tab)).unwrap(),
-        let pcheck_ab = PairingCheck::rand(rng,&[(final_a, &fvkey.0),(&fwkey.0, final_b)], final_tab),
+        let pcheck_ab = PairingCheck::rand(&rng,&[(final_a, &fvkey.0),(&fwkey.0, final_b)], final_tab),
 
         //  final_aB.1 = U = e(A,v2)e(w2,B)
         //let _check_ab1 = ab1clone.send(PairingCheck::rand(&rng,&[(final_a, &fvkey.1),(&fwkey.1, final_b)], final_uab)).unwrap(),
-        let pcheckab2 = PairingCheck::rand(rng,&[(final_a, &fvkey.1),(&fwkey.1, final_b)], final_uab),
+        let pcheckab2 = PairingCheck::rand(&rng,&[(final_a, &fvkey.1),(&fwkey.1, final_b)], final_uab),
 
         // MIPP
         // Verify base inner product commitment
         // Z ==  c ^ r
         let final_z =
-            ip::multiexponentiation::<E::G1Affine>(&[*final_c], &[final_r]),
+            ip::multiexponentiation::<E::G1Affine>(&[final_c.clone()], &[final_r]),
         // Check commiment correctness
         // T = e(C,v1)
         //let _check_t = tclone.send(PairingCheck::rand(&rng,&[(final_c,&fvkey.0)],final_tc)).unwrap(),
-        let pcheckt = PairingCheck::rand(rng,&[(final_c,&fvkey.0)],final_tc),
+        let pcheckt = PairingCheck::rand(&rng,&[(final_c,&fvkey.0)],final_tc),
         // U = e(A,v2)
         //let _check_u = uclone.send(PairingCheck::rand(&rng,&[(final_c,&fvkey.1)],final_uc)).unwrap()
-        let pchecku = PairingCheck::rand(rng,&[(final_c,&fvkey.1)],final_uc)
+        let pchecku = PairingCheck::rand(&rng,&[(final_c,&fvkey.1)],final_uc)
     };
 
     tclone.send(pcheckt).unwrap();
@@ -579,7 +580,7 @@ pub fn verify_kzg_v<E: Pairing, R: Rng + Send>(
             final_vkey.0.into_group(),
             v_srs.g_alpha,
             vkey_opening.0,
-            rng,
+            &rng,
             v1clone,
         ),
 
@@ -592,7 +593,7 @@ pub fn verify_kzg_v<E: Pairing, R: Rng + Send>(
             final_vkey.1.into_group(),
             v_srs.g_beta,
             vkey_opening.1,
-            rng,
+            &rng,
             v2clone,
         )
     };
@@ -619,7 +620,7 @@ fn kzg_check_v<E: Pairing, R: Rng + Send>(
     // vk - (g * x)
     let c = sub!(vk, &mul!(v_srs.g, x)).into_affine();
     let p = PairingCheck::rand(
-        rng,
+        &rng,
         &[(&ng, &b), (&c, &pi)],
         &<E as Pairing>::TargetField::one(),
     );
@@ -640,7 +641,7 @@ pub fn verify_kzg_w<E: Pairing, R: Rng + Send>(
     // compute in parallel f(z) and z^n and then combines into f_w(z) = z^n * f(z)
     par! {
         let fz = polynomial_evaluation_product_form_from_transcript(challenges, kzg_challenge, r_shift),
-        let zn = kzg_challenge.pow([v_srs.n as u64])
+        let zn = kzg_challenge.pow(&[v_srs.n as u64])
     };
 
     let mut fwz = fz;
@@ -662,7 +663,7 @@ pub fn verify_kzg_w<E: Pairing, R: Rng + Send>(
             final_wkey.0.into_group(),
             v_srs.h_alpha,
             wkey_opening.0,
-            rng,
+            &rng,
             w1clone,
         ),
 
@@ -675,7 +676,7 @@ pub fn verify_kzg_w<E: Pairing, R: Rng + Send>(
             final_wkey.1.into_group(),
             v_srs.h_beta,
             wkey_opening.1,
-            rng,
+            &rng,
             w2clone,
         )
     };
@@ -702,7 +703,7 @@ fn kzg_check_w<E: Pairing, R: Rng + Send>(
     // wk - (x * h)
     let d = sub!(wk, &mul!(v_srs.h, x)).into_affine();
     let p = PairingCheck::rand(
-        rng,
+        &rng,
         &[(&a, &nh), (&pi, &d)],
         &<E as Pairing>::TargetField::one(),
     );

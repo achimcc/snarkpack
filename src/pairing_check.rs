@@ -27,12 +27,6 @@ pub struct PairingCheck<E: Pairing> {
     non_randomized: u8,
 }
 
-impl<E: Pairing> Default for PairingCheck<E> {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl<E> PairingCheck<E>
 where
     E: Pairing,
@@ -107,7 +101,7 @@ where
         it: &[(&'a E::G1Affine, &'a E::G2Affine)],
         out: &'a <E as Pairing>::TargetField,
     ) -> PairingCheck<E> {
-        let coeff = rand_fr::<E, R>(rng);
+        let coeff = rand_fr::<E, R>(&rng);
         let miller_out = it
             .into_par_iter()
             .map(|(a, b)| {
@@ -115,19 +109,25 @@ where
                 (E::G1Prepared::from(na), E::G2Prepared::from(**b))
             })
             .map(|(a, b)| E::miller_loop(a, b))
-            .fold(<E as Pairing>::TargetField::one, |mut acc, res| {
-                acc.mul_assign(&(res.0));
-                acc
-            })
-            .reduce(<E as Pairing>::TargetField::one, |mut acc, res| {
-                acc.mul_assign(&res);
-                acc
-            });
-        let mut outt = *out;
+            .fold(
+                || <E as Pairing>::TargetField::one(),
+                |mut acc, res| {
+                    acc.mul_assign(&(res.0));
+                    acc
+                },
+            )
+            .reduce(
+                || <E as Pairing>::TargetField::one(),
+                |mut acc, res| {
+                    acc.mul_assign(&res);
+                    acc
+                },
+            );
+        let mut outt = out.clone();
         if out != &<E as Pairing>::TargetField::one() {
             // we only need to make this expensive operation is the output is
             // not one since 1^r = 1
-            outt = outt.pow(coeff.into_bigint());
+            outt = outt.pow(&(coeff.into_bigint()));
         }
         PairingCheck {
             left: miller_out,
@@ -177,7 +177,7 @@ fn mul_if_not_one<E: Pairing>(
 ) {
     let one = <E as Pairing>::TargetField::one();
     if left == &one {
-        *left = *right;
+        *left = right.clone();
         return;
     } else if right == &one {
         // nothing to do here

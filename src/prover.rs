@@ -83,16 +83,16 @@ pub fn aggregate_proofs<E: Pairing + std::fmt::Debug, T: Transcript>(
     let b_r = b
         .par_iter()
         .zip(r_vec.par_iter())
-        .map(|(bi, ri)| mul!(bi.into_group(), *ri).into_affine())
+        .map(|(bi, ri)| mul!(bi.into_group(), ri.clone()).into_affine())
         .collect::<Vec<_>>();
 
     let refb_r = &b_r;
     let refr_vec = &r_vec;
     try_par! {
         // compute A * B^r for the verifier
-        let ip_ab = ip::pairing::<E>(refa, refb_r),
+        let ip_ab = ip::pairing::<E>(&refa, &refb_r),
         // compute C^r for the verifier
-        let agg_c = ip::multiexponentiation::<E::G1Affine>(refc, refr_vec)
+        let agg_c = ip::multiexponentiation::<E::G1Affine>(&refc, &refr_vec)
     };
     let agg_c = agg_c.into_affine();
     // w^{r^{-1}}
@@ -100,7 +100,7 @@ pub fn aggregate_proofs<E: Pairing + std::fmt::Debug, T: Transcript>(
 
     // we prove tipp and mipp using the same recursive loop
     let proof = prove_tipp_mipp(
-        srs,
+        &srs,
         transcript,
         &a,
         &b_r,
@@ -141,10 +141,10 @@ fn prove_tipp_mipp<E: Pairing, T: Transcript>(
     ip_ab: &<E as Pairing>::TargetField,
     agg_c: &E::G1Affine,
 ) -> Result<TippMippProof<E>, Error> {
-    let r_shift = r_vec[1];
+    let r_shift = r_vec[1].clone();
     // Run GIPA
     let (proof, mut challenges, mut challenges_inv) =
-        gipa_tipp_mipp(transcript, a, b, c, &srs.vkey, wkey, r_vec, ip_ab, agg_c)?;
+        gipa_tipp_mipp(transcript, a, b, c, &srs.vkey, &wkey, r_vec, ip_ab, agg_c)?;
 
     // Prove final commitment keys are wellformed
     // we reverse the transcript so the polynomial in kzg opening is constructed
@@ -251,11 +251,11 @@ fn gipa_tipp_mipp<E: Pairing>(
         // See section 3.3 for paper version with equivalent names
         try_par! {
             // TIPP part
-            let tab_l = commitment::pair::<E>(rvk_left, rwk_right, ra_right, rb_left),
-            let tab_r = commitment::pair::<E>(rvk_right, rwk_left, ra_left, rb_right),
+            let tab_l = commitment::pair::<E>(&rvk_left, &rwk_right, &ra_right, &rb_left),
+            let tab_r = commitment::pair::<E>(&rvk_right, &rwk_left, &ra_left, &rb_right),
             // \prod e(A_right,B_left)
-            let zab_l = ip::pairing::<E>(ra_right, rb_left),
-            let zab_r = ip::pairing::<E>(ra_left, rb_right),
+            let zab_l = ip::pairing::<E>(&ra_right, &rb_left),
+            let zab_r = ip::pairing::<E>(&ra_left, &rb_right),
 
             // MIPP part
             // z_l = c[n':] ^ r[:n']
@@ -263,9 +263,9 @@ fn gipa_tipp_mipp<E: Pairing>(
             // Z_r = c[:n'] ^ r[n':]
             let zc_r = ip::multiexponentiation::<E::G1Affine>(rc_left, rr_right),
             // u_l = c[n':] * v[:n']
-            let tuc_l = commitment::single_g1::<E>(rvk_left, rc_right),
+            let tuc_l = commitment::single_g1::<E>(&rvk_left, rc_right),
             // u_r = c[:n'] * v[n':]
-            let tuc_r = commitment::single_g1::<E>(rvk_right, rc_left)
+            let tuc_r = commitment::single_g1::<E>(&rvk_right, rc_left)
         };
 
         // Fiat-Shamir challenge
@@ -304,7 +304,7 @@ fn gipa_tipp_mipp<E: Pairing>(
             .for_each(|(r_l, r_r)| {
                 // r[:n'] + r[n':]^x^-1
                 r_r.mul_assign(&c_inv);
-                r_l.add_assign(*r_r);
+                r_l.add_assign(r_r.clone());
             });
         let len = r_left.len();
         m_r.resize(len, E::ScalarField::zero()); // shrink to new size
@@ -363,7 +363,7 @@ fn prove_commitment_v<G: AffineRepr>(
 
     // f_v(z)
     let vkey_poly_z = polynomial_evaluation_product_form_from_transcript(
-        transcript,
+        &transcript,
         kzg_challenge,
         &G::ScalarField::one(),
     );
@@ -393,9 +393,9 @@ fn prove_commitment_w<G: AffineRepr>(
 
     par! {
         // this computes f(z)
-        let fz = polynomial_evaluation_product_form_from_transcript(transcript, kzg_challenge, r_shift),
+        let fz = polynomial_evaluation_product_form_from_transcript(&transcript, kzg_challenge, &r_shift),
         // this computes the "shift" z^n
-        let zn = kzg_challenge.pow([n as u64])
+        let zn = kzg_challenge.pow(&[n as u64])
     };
     // this computes f_w(z) by multiplying by zn
     let mut fwz = fz;
@@ -423,11 +423,14 @@ fn create_kzg_opening<G: AffineRepr>(
     neg_kzg_challenge = neg_kzg_challenge.neg();
 
     if poly.coeffs().len() != srs_powers_alpha_table.len() {
-        return Err(Error::InvalidSRS(format!(
-            "SRS len {} != coefficients len {}",
-            srs_powers_alpha_table.len(),
-            poly.coeffs().len(),
-        )));
+        return Err(Error::InvalidSRS(
+            format!(
+                "SRS len {} != coefficients len {}",
+                srs_powers_alpha_table.len(),
+                poly.coeffs().len(),
+            )
+            .to_string(),
+        ));
     }
 
     // f_v(X) - f_v(z) / (X - z)
@@ -452,11 +455,11 @@ fn create_kzg_opening<G: AffineRepr>(
     // of Bunz'19
     let (a, b) = rayon::join(
         || {
-            VariableBaseMSM::msm(srs_powers_alpha_table, &quotient_polynomial_coeffs)
+            VariableBaseMSM::msm(&srs_powers_alpha_table, &quotient_polynomial_coeffs)
                 .expect("msm for a failed!")
         },
         || {
-            VariableBaseMSM::msm(srs_powers_beta_table, &quotient_polynomial_coeffs)
+            VariableBaseMSM::msm(&srs_powers_beta_table, &quotient_polynomial_coeffs)
                 .expect("msm for b failed!")
         },
     );
@@ -479,10 +482,10 @@ pub(super) fn polynomial_evaluation_product_form_from_transcript<F: Field>(
 
     let one = F::one();
 
-    let mut res = one + transcript[0] * power_zr;
+    let mut res = one + transcript[0] * &power_zr;
     for x in &transcript[1..] {
         power_zr = power_zr.square();
-        res.mul_assign(one + *x * power_zr);
+        res.mul_assign(one + *x * &power_zr);
     }
 
     res
@@ -511,7 +514,7 @@ fn polynomial_coefficients_from_transcript<F: Field>(transcript: &[F], r_shift: 
             power_2_r = power_2_r.square();
         }
         for j in 0..n {
-            let coeff = coefficients[j] * (*x * power_2_r);
+            let coeff = coefficients[j] * &(*x * &power_2_r);
             coefficients.push(coeff);
         }
     }

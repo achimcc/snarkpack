@@ -86,7 +86,7 @@ where
             })
             .unzip();
 
-        Ok(Self { a, b })
+        Ok(Self { a: a, b: b })
     }
 
     /// Returns the left and right commitment key part. It makes copy.
@@ -128,7 +128,7 @@ where
             })
             .unzip();
 
-        Ok(Self { a, b })
+        Ok(Self { a: a, b: b })
     }
 
     /// Returns the first values in the vector of v1 and v2 (respectively

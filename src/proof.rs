@@ -74,7 +74,7 @@ impl<E: Pairing> AggregateProof<E> {
     /// `CanonicalSerialize`.
     pub fn write<W: Write>(&self, mut out: W) -> Result<(), Error> {
         self.serialize_compressed(&mut out)
-            .map_err(Error::Serialization)
+            .map_err(|e| Error::Serialization(e))
     }
 
     /// Reads the aggregate proof to the given destination. This method is for
@@ -82,7 +82,7 @@ impl<E: Pairing> AggregateProof<E> {
     /// another arkwork protocol, you can use the underlying implementation of
     /// `CanonicalSerialize`.
     pub fn read<R: Read>(mut source: R) -> Result<Self, Error> {
-        Self::deserialize_compressed(&mut source).map_err(Error::Serialization)
+        Self::deserialize_compressed(&mut source).map_err(|e| Error::Serialization(e))
     }
 }
 
@@ -135,7 +135,7 @@ impl<E: Pairing> GipaProof<E> {
 impl<E: Pairing> CanonicalSerialize for GipaProof<E> {
     fn serialized_size(&self, compress: Compress) -> usize {
         let log_proofs = Self::log_proofs(self.nproofs as usize);
-        self.nproofs.serialized_size(compress)
+        (self.nproofs as u32).serialized_size(compress)
             + log_proofs
                 * (self.comms_ab[0].0.serialized_size(compress)
                     + self.comms_ab[0].1.serialized_size(compress)
