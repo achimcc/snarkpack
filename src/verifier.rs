@@ -196,6 +196,7 @@ pub fn verify_aggregate_proof<E: Pairing + std::fmt::Debug, R: Rng + Send, T: Tr
 /// verify_tipp_mipp returns a pairing equation to check the tipp proof.  $r$ is
 /// the randomness used to produce a random linear combination of A and B and
 /// used in the MIPP part with C
+#[allow(clippy::redundant_clone)]
 fn verify_tipp_mipp<E: Pairing, R: Rng + Send, T: Transcript + Send>(
     v_srs: &VerifierSRS<E>,
     proof: &AggregateProof<E>,
@@ -355,7 +356,7 @@ fn gipa_verify_tipp_mipp<E: Pairing, T: Transcript + Send>(
     let now = Instant::now();
 
     let mut challenges = Vec::new();
-    let mut challenges_inv = Vec::new();
+    let mut challenges_inv: Vec<<E as Pairing>::ScalarField> = Vec::new();
 
     transcript.append(b"inner-product-ab", &proof.ip_ab);
     transcript.append(b"comm-c", &proof.agg_c);
@@ -545,6 +546,7 @@ fn gipa_verify_tipp_mipp<E: Pairing, T: Transcript + Send>(
 /// verify_kzg_opening_g2 takes a KZG opening, the final commitment key, SRS and
 /// any shift (in TIPP we shift the v commitment by r^-1) and returns a pairing
 /// tuple to check if the opening is correct or not.
+#[allow(clippy::redundant_clone)]
 pub fn verify_kzg_v<E: Pairing, R: Rng + Send>(
     v_srs: &VerifierSRS<E>,
     final_vkey: &(E::G2Affine, E::G2Affine),
@@ -631,6 +633,7 @@ fn kzg_check_v<E: Pairing, R: Rng + Send>(
 
 /// Similar to verify_kzg_opening_g2 but for g1.
 #[allow(clippy::too_many_arguments)]
+#[allow(clippy::redundant_clone)]
 pub fn verify_kzg_w<E: Pairing, R: Rng + Send>(
     v_srs: &VerifierSRS<E>,
     final_wkey: &(E::G1Affine, E::G1Affine),
