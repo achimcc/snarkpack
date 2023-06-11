@@ -173,7 +173,7 @@ pub fn verify_aggregate_proof<E: Pairing + std::fmt::Debug, R: Rng + Send, T: Tr
 
                     g_ic.add_assign(&totsi);
 
-                    let ml = E::miller_loop(E::G1Prepared::from(g_ic.into_affine()), E::G2Prepared::from(pvk.vk.gamma_g2.clone()));
+                    let ml = E::miller_loop(E::G1Prepared::from(g_ic.into_affine()), E::G2Prepared::from(pvk.vk.gamma_g2));
                     let elapsed = now.elapsed().as_millis();
                     dbg!("table generation: {}ms", elapsed);
 
@@ -182,8 +182,7 @@ pub fn verify_aggregate_proof<E: Pairing + std::fmt::Debug, R: Rng + Send, T: Tr
         };
         // final value ip_ab is what we want to compare in the groth16
         // aggregated equation A * B
-        let check =
-            PairingCheck::from_products(vec![left.0, middle.0, right.0], proof.ip_ab.clone());
+        let check = PairingCheck::from_products(vec![left.0, middle.0, right.0], proof.ip_ab);
         send_checks.send(check).unwrap();
     });
     let res = valid_rcv.recv().unwrap();
@@ -285,7 +284,7 @@ fn verify_tipp_mipp<E: Pairing, R: Rng + Send, T: Transcript + Send>(
         // Verify base inner product commitment
         // Z ==  c ^ r
         let final_z =
-            ip::multiexponentiation::<E::G1Affine>(&[final_c.clone()], &[final_r]),
+            ip::multiexponentiation::<E::G1Affine>(&[*final_c], &[final_r]),
         // Check commiment correctness
         // T = e(C,v1)
         //let _check_t = tclone.send(PairingCheck::rand(&rng,&[(final_c,&fvkey.0)],final_tc)).unwrap(),
@@ -332,6 +331,7 @@ fn verify_tipp_mipp<E: Pairing, R: Rng + Send, T: Transcript + Send>(
 /// * There are T,U,Z vectors as well for the MIPP relationship. Both TIPP and
 /// MIPP share the same challenges however, enabling to re-use common operations
 /// between them, such as the KZG proof for commitment keys.
+#[allow(clippy::type_complexity)]
 fn gipa_verify_tipp_mipp<E: Pairing, T: Transcript + Send>(
     proof: &AggregateProof<E>,
     r_shift: &E::ScalarField,
@@ -429,6 +429,7 @@ fn gipa_verify_tipp_mipp<E: Pairing, T: Transcript + Send>(
     // Since at the end we want to multiple all "t" values together, we do
     // multiply all of them in parrallel and then merge then back at the end.
     // same for u and z.
+    #[allow(clippy::upper_case_acronyms)]
     enum Op<'a, E: Pairing> {
         TAB(
             &'a <E as Pairing>::TargetField,
@@ -562,7 +563,7 @@ pub fn verify_kzg_v<E: Pairing, R: Rng + Send>(
     // -g such that when we test a pairing equation we only need to check if
     // it's equal 1 at the end:
     // e(a,b) = e(c,d) <=> e(a,b)e(-c,d) = 1
-    let mut ng = v_srs.g.clone();
+    let mut ng = v_srs.g;
     // e(A,B) = e(C,D) <=> e(A,B)e(-C,D) == 1 <=> e(A,B)e(C,D)^-1 == 1
     ng = ng.neg();
     let ng = ng.into_affine();
@@ -599,6 +600,7 @@ pub fn verify_kzg_v<E: Pairing, R: Rng + Send>(
     };
 }
 
+#[allow(clippy::too_many_arguments)]
 fn kzg_check_v<E: Pairing, R: Rng + Send>(
     v_srs: &VerifierSRS<E>,
     ng: E::G1Affine,
@@ -628,6 +630,7 @@ fn kzg_check_v<E: Pairing, R: Rng + Send>(
 }
 
 /// Similar to verify_kzg_opening_g2 but for g1.
+#[allow(clippy::too_many_arguments)]
 pub fn verify_kzg_w<E: Pairing, R: Rng + Send>(
     v_srs: &VerifierSRS<E>,
     final_wkey: &(E::G1Affine, E::G1Affine),
@@ -682,6 +685,7 @@ pub fn verify_kzg_w<E: Pairing, R: Rng + Send>(
     };
 }
 
+#[allow(clippy::too_many_arguments)]
 fn kzg_check_w<E: Pairing, R: Rng + Send>(
     v_srs: &VerifierSRS<E>,
     nh: E::G2Affine,

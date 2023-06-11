@@ -89,16 +89,17 @@ impl<E: Pairing> AggregateProof<E> {
 /// It contains all elements derived in the GIPA loop for both TIPP and MIPP at
 /// the same time. Serialization is done manually here for better inspection
 /// (CanonicalSerialization is implemented manually, not via the macro).
+type CommitmentOutput<E> = commitment::Output<<E as Pairing>::TargetField>;
 #[derive(Debug, Clone)]
 pub struct GipaProof<E: Pairing> {
     pub nproofs: u32,
     pub comms_ab: Vec<(
-        commitment::Output<<E as Pairing>::TargetField>,
-        commitment::Output<<E as Pairing>::TargetField>,
+        CommitmentOutput<E>,
+        CommitmentOutput<E>,
     )>,
     pub comms_c: Vec<(
-        commitment::Output<<E as Pairing>::TargetField>,
-        commitment::Output<<E as Pairing>::TargetField>,
+        CommitmentOutput<E>,
+        CommitmentOutput<E>,
     )>,
     pub z_ab: Vec<(<E as Pairing>::TargetField, <E as Pairing>::TargetField)>,
     pub z_c: Vec<(E::G1Affine, E::G1Affine)>,

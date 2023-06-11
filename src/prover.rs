@@ -83,7 +83,7 @@ pub fn aggregate_proofs<E: Pairing + std::fmt::Debug, T: Transcript>(
     let b_r = b
         .par_iter()
         .zip(r_vec.par_iter())
-        .map(|(bi, ri)| mul!(bi.into_group(), ri.clone()).into_affine())
+        .map(|(bi, ri)| mul!(bi.into_group(), *ri).into_affine())
         .collect::<Vec<_>>();
 
     let refb_r = &b_r;
@@ -130,6 +130,7 @@ pub fn aggregate_proofs<E: Pairing + std::fmt::Debug, T: Transcript>(
 /// commitment key v is used to commit to A and C recursively in GIPA such that
 /// only one KZG proof is needed for v. In the original paper version, since the
 /// challenges of GIPA would be different, two KZG proofs would be needed.
+#[allow(clippy::too_many_arguments)]
 fn prove_tipp_mipp<E: Pairing, T: Transcript>(
     srs: &ProverSRS<E>,
     transcript: &mut T,
@@ -141,7 +142,7 @@ fn prove_tipp_mipp<E: Pairing, T: Transcript>(
     ip_ab: &<E as Pairing>::TargetField,
     agg_c: &E::G1Affine,
 ) -> Result<TippMippProof<E>, Error> {
-    let r_shift = r_vec[1].clone();
+    let r_shift = r_vec[1];
     // Run GIPA
     let (proof, mut challenges, mut challenges_inv) =
         gipa_tipp_mipp(transcript, a, b, c, &srs.vkey, wkey, r_vec, ip_ab, agg_c)?;
@@ -189,6 +190,8 @@ fn prove_tipp_mipp<E: Pairing, T: Transcript>(
 /// It returns a proof containing all intermdiate committed values, as well as
 /// the challenges generated necessary to do the polynomial commitment proof
 /// later in TIPP.
+#[allow(clippy::too_many_arguments)]
+#[allow(clippy::type_complexity)]
 fn gipa_tipp_mipp<E: Pairing>(
     transcript: &mut impl Transcript,
     a: &[E::G1Affine],
@@ -304,7 +307,7 @@ fn gipa_tipp_mipp<E: Pairing>(
             .for_each(|(r_l, r_r)| {
                 // r[:n'] + r[n':]^x^-1
                 r_r.mul_assign(&c_inv);
-                r_l.add_assign(r_r.clone());
+                r_l.add_assign(*r_r);
             });
         let len = r_left.len();
         m_r.resize(len, E::ScalarField::zero()); // shrink to new size

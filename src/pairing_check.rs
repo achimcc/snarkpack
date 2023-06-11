@@ -117,7 +117,7 @@ where
                 acc.mul_assign(&res);
                 acc
             });
-        let mut outt = out.clone();
+        let mut outt = *out;
         if out != &<E as Pairing>::TargetField::one() {
             // we only need to make this expensive operation is the output is
             // not one since 1^r = 1
@@ -171,7 +171,7 @@ fn mul_if_not_one<E: Pairing>(
 ) {
     let one = <E as Pairing>::TargetField::one();
     if left == &one {
-        *left = right.clone();
+        *left = *right;
         return;
     } else if right == &one {
         // nothing to do here
