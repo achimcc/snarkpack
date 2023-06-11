@@ -18,7 +18,7 @@ use std::ops::MulAssign;
 /// before going into a final exponentiation result
 /// - a right side result which is already in the right subgroup Gt which is to
 /// be compared to the left side when "final_exponentiatiat"-ed
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Default)]
 pub struct PairingCheck<E: Pairing> {
     left: <E as Pairing>::TargetField,
     right: <E as Pairing>::TargetField,
