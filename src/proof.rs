@@ -93,14 +93,8 @@ type CommitmentOutput<E> = commitment::Output<<E as Pairing>::TargetField>;
 #[derive(Debug, Clone)]
 pub struct GipaProof<E: Pairing> {
     pub nproofs: u32,
-    pub comms_ab: Vec<(
-        CommitmentOutput<E>,
-        CommitmentOutput<E>,
-    )>,
-    pub comms_c: Vec<(
-        CommitmentOutput<E>,
-        CommitmentOutput<E>,
-    )>,
+    pub comms_ab: Vec<(CommitmentOutput<E>, CommitmentOutput<E>)>,
+    pub comms_c: Vec<(CommitmentOutput<E>, CommitmentOutput<E>)>,
     pub z_ab: Vec<(<E as Pairing>::TargetField, <E as Pairing>::TargetField)>,
     pub z_c: Vec<(E::G1Affine, E::G1Affine)>,
     pub final_a: E::G1Affine,
