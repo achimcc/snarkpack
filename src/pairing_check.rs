@@ -101,7 +101,7 @@ where
         it: &[(&'a E::G1Affine, &'a E::G2Affine)],
         out: &'a <E as Pairing>::TargetField,
     ) -> PairingCheck<E> {
-        let coeff = rand_fr::<E, R>(&rng);
+        let coeff = rand_fr::<E, R>(rng);
         let miller_out = it
             .into_par_iter()
             .map(|(a, b)| {
@@ -127,7 +127,7 @@ where
         if out != &<E as Pairing>::TargetField::one() {
             // we only need to make this expensive operation is the output is
             // not one since 1^r = 1
-            outt = outt.pow(&(coeff.into_bigint()));
+            outt = outt.pow(coeff.into_bigint());
         }
         PairingCheck {
             left: miller_out,
