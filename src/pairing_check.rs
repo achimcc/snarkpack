@@ -109,20 +109,14 @@ where
                 (E::G1Prepared::from(na), E::G2Prepared::from(**b))
             })
             .map(|(a, b)| E::miller_loop(a, b))
-            .fold(
-                || <E as Pairing>::TargetField::one(),
-                |mut acc, res| {
-                    acc.mul_assign(&(res.0));
-                    acc
-                },
-            )
-            .reduce(
-                || <E as Pairing>::TargetField::one(),
-                |mut acc, res| {
-                    acc.mul_assign(&res);
-                    acc
-                },
-            );
+            .fold(<E as Pairing>::TargetField::one, |mut acc, res| {
+                acc.mul_assign(&(res.0));
+                acc
+            })
+            .reduce(<E as Pairing>::TargetField::one, |mut acc, res| {
+                acc.mul_assign(&res);
+                acc
+            });
         let mut outt = out.clone();
         if out != &<E as Pairing>::TargetField::one() {
             // we only need to make this expensive operation is the output is

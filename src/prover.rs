@@ -423,14 +423,11 @@ fn create_kzg_opening<G: AffineRepr>(
     neg_kzg_challenge = neg_kzg_challenge.neg();
 
     if poly.coeffs().len() != srs_powers_alpha_table.len() {
-        return Err(Error::InvalidSRS(
-            format!(
-                "SRS len {} != coefficients len {}",
-                srs_powers_alpha_table.len(),
-                poly.coeffs().len(),
-            )
-            .to_string(),
-        ));
+        return Err(Error::InvalidSRS(format!(
+            "SRS len {} != coefficients len {}",
+            srs_powers_alpha_table.len(),
+            poly.coeffs().len(),
+        )));
     }
 
     // f_v(X) - f_v(z) / (X - z)

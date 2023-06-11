@@ -219,15 +219,15 @@ impl<E: Pairing> GenericSRS<E> {
     }
 
     pub fn read<R: Read>(mut reader: R) -> Result<Self, Error> {
-        let len = u32::deserialize_compressed(&mut reader).map_err(|e| Error::Serialization(e))?;
+        let len = u32::deserialize_compressed(&mut reader).map_err(Error::Serialization)?;
         if len > MAX_SRS_SIZE as u32 {
             return Err(Error::InvalidSRS("SRS len > maximum".to_string()));
         }
 
-        let g_alpha_powers = read_vec(len, &mut reader).map_err(|e| Error::Serialization(e))?;
-        let g_beta_powers = read_vec(len, &mut reader).map_err(|e| Error::Serialization(e))?;
-        let h_alpha_powers = read_vec(len, &mut reader).map_err(|e| Error::Serialization(e))?;
-        let h_beta_powers = read_vec(len, &mut reader).map_err(|e| Error::Serialization(e))?;
+        let g_alpha_powers = read_vec(len, &mut reader).map_err(Error::Serialization)?;
+        let g_beta_powers = read_vec(len, &mut reader).map_err(Error::Serialization)?;
+        let h_alpha_powers = read_vec(len, &mut reader).map_err(Error::Serialization)?;
+        let h_beta_powers = read_vec(len, &mut reader).map_err(Error::Serialization)?;
 
         Ok(Self {
             g_alpha_powers,
