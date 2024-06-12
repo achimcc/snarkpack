@@ -3,13 +3,11 @@ use ark_ff::One;
 use ark_groth16::{prepare_verifying_key, Groth16};
 use snarkpack;
 use snarkpack::transcript::Transcript;
-
 mod constraints;
-use crate::constraints::Benchmark;
+use constraints::Benchmark;
 use rand_core::SeedableRng;
 
-#[test]
-fn groth16_aggregation() {
+pub fn groth16_aggregation() {
     let num_constraints = 1000;
     let nproofs = 8;
     let mut rng = rand_chacha::ChaChaRng::seed_from_u64(1u64);
